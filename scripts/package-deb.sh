@@ -88,11 +88,13 @@ sleep 0.3
 rm -f "$SOCKET"
 
 export DISPLAY="${DISPLAY:-:0}"
+export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 systemd-run --user --unit=spotlight-electron \
     --working-directory="$APP_DIR" \
     --setenv=DISPLAY="${DISPLAY:-:0}" \
-    --setenv=GDK_BACKEND=x11 \
-    --setenv=CLUTTER_BACKEND=x11 \
+    --setenv=WAYLAND_DISPLAY="${WAYLAND_DISPLAY}" \
+    --setenv=XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR}" \
     "$ELECTRON" --no-sandbox "$APP_DIR"
 
 systemd-run --user --unit=spotlight-daemon "$BINARY"

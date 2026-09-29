@@ -26,13 +26,19 @@ const SOCKET_PATH = '/tmp/spotlight-files.sock';
 // `--dev` flag switches the window source from the built bundle to the Vite dev server.
 const IS_DEV = process.argv.includes('--dev');
 
-// Disable GPU acceleration — XWayland GPU init often fails inside Electron;
-// the transparent Spotlight window renders fine on the software compositor.
-app.disableHardwareAcceleration();
-app.commandLine.appendSwitch('no-sandbox');     // sandbox needs root-owned chrome-sandbox
-app.commandLine.appendSwitch('disable-gpu');    // enforce software rendering
+// SwiftShader software GL: keeps the GPU process alive (needed for
+// compositing + alpha channel → transparent window) but avoids the
+// NVIDIA driver crash (error 1002). Unlike app.disableHardwareAcceleration()
+// which kills ALL compositing and makes the window opaque, SwiftShader
+// runs a software GL implementation so the compositor stays functional.
+// See: open-webui/desktop#178, #273
+app.commandLine.appendSwitch('no-sandbox');
+app.commandLine.appendSwitch('use-gl', 'angle');
+app.commandLine.appendSwitch('use-angle', 'swiftshader');
+app.commandLine.appendSwitch('ozone-platform=wayland'); // native Wayland for alpha
 
 let win = null;   // the single Spotlight window (created lazily)
+let showTime = 0;  // timestamp of last show() — used to ignore spurious blur on Wayland
 
 // Build the transparent, frameless window. Hidden until toggled.
 function createWindow() {
@@ -72,8 +78,10 @@ function createWindow() {
   }
 
   // Click-outside / focus-loss dismisses the window (macOS Spotlight behavior).
+  // On Wayland, blur can fire spuriously right after show, so we add a small
+  // grace period — ignore blur events within 500ms of showing.
   win.on('blur', () => {
-    if (win && win.isVisible()) {
+    if (win && win.isVisible() && Date.now() - showTime > 500) {
       win.hide();
     }
   });
@@ -96,6 +104,7 @@ function showWindow() {
   const y = Math.round(primary.bounds.y + (primary.bounds.height - winHeight) / 2 - primary.bounds.height * 0.12);
   win.setBounds({ x, y, width: winWidth, height: winHeight });
   win.webContents.send('spotlight-show'); // tell renderer to clear + focus input
+  showTime = Date.now();
   win.show();
   win.focus();
 }

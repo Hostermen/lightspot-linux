@@ -112,8 +112,6 @@ function App() {
   }, [selected]);
 
   // Auto-resize the Electron window to fit the rendered content.
-  // Uses getBoundingClientRect().height (includes the border) so the bottom
-  // outline is not clipped by the transparent window.
   useEffect(() => {
     const el = document.querySelector('.spotlight');
     if (el) {
