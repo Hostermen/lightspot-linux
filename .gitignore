@@ -1,0 +1,16 @@
+# Rust
+/target
+**/*.rs.bk
+
+# Node / Electron
+/electron/node_modules
+/electron/dist
+
+# Runtime sockets
+*.sock
+/tmp/
+
+# Editor / OS
+.DS_Store
+*.swp
+*~

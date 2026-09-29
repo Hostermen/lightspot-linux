@@ -1,0 +1,87 @@
+/* Spotlight Files — GNOME Shell extension stylesheet */
+
+.spotlight-card {
+    background-color: rgba(24, 24, 30, 0.50);
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.70);
+    padding: 0;
+}
+
+.spotlight-search-bar {
+    padding: 18px 22px;
+    spacing: 14px;
+}
+
+.spotlight-magnifier {
+    color: rgba(255, 255, 255, 0.60);
+    icon-size: 22px;
+}
+
+.spotlight-search-entry {
+    font-size: 22px;
+    font-weight: 400;
+    color: #ffffff;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    selection-background-color: #0a84ff;
+    selected-color: #ffffff;
+}
+
+.spotlight-search-entry StLabel.hint-text {
+    color: rgba(255, 255, 255, 0.38);
+}
+
+.spotlight-separator {
+    background-color: rgba(255, 255, 255, 0.10);
+    height: 1px;
+    margin: 0 10px;
+}
+
+.spotlight-scroll {
+    max-height: 380px;
+    background-color: transparent;
+}
+
+.spotlight-results {
+    padding: 6px 8px;
+    spacing: 2px;
+    background-color: transparent;
+}
+
+.spotlight-result-row {
+    border-radius: 10px;
+    padding: 9px 10px;
+    spacing: 12px;
+    transition-duration: 100ms;
+    background-color: transparent;
+}
+
+.spotlight-result-row:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.spotlight-result-row:selected,
+.spotlight-result-row.selected {
+    background-color: #0a84ff;
+}
+
+.spotlight-result-title {
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.spotlight-result-subtitle {
+    color: rgba(255, 255, 255, 0.42);
+    font-size: 11px;
+}
+
+.spotlight-result-row.selected .spotlight-result-title {
+    color: #ffffff;
+}
+
+.spotlight-result-row.selected .spotlight-result-subtitle {
+    color: rgba(255, 255, 255, 0.85);
+}
