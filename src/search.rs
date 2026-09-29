@@ -38,74 +38,159 @@ fn file_icon(path: &str) -> String {
         "dockerfile" | "containerfile" => return "text-x-dockerfile".to_string(),
         "makefile" | "gnumakefile" => return "text-x-makefile".to_string(),
         "cmakelists.txt" => return "text-x-cmake".to_string(),
+        "meson.build" | "meson_options.txt" => return "text-x-meson".to_string(),
+        "build" | "build.bazel" | "buck" | "workspace" => return "text-x-bazel".to_string(),
         "license" | "licence" | "copying" => return "text-x-generic".to_string(),
-        "readme" | "readme.md" | "readme.txt" => return "text-x-readme".to_string(),
-        "changelog" => return "text-x-changelog".to_string(),
-        "gemfile" | "rakefile" | "brewfile" | "capfile" => return "text-x-ruby".to_string(),
-        "podfile" => return "text-x-generic".to_string(),
-        ".gitignore" | ".gitattributes" | ".gitmodules" => return "text-x-generic".to_string(),
-        ".dockerignore" => return "text-x-generic".to_string(),
-        ".env" | ".bashrc" | ".zshrc" | ".bash_profile" | ".profile"
-        | ".vimrc" | ".editorconfig" => return "text-x-generic".to_string(),
+        "readme" | "readme.md" | "readme.txt" | "readme.rst" => return "text-x-readme".to_string(),
+        "changelog" | "changelog.md" | "changelog.txt" => return "text-x-changelog".to_string(),
+        "gemfile" | "rakefile" | "brewfile" | "capfile" | "gemfile.lock" => return "text-x-ruby".to_string(),
+        "podfile" | "podfile.lock" => return "text-x-generic".to_string(),
+        ".gitignore" | ".gitattributes" | ".gitmodules" | ".gitconfig" | ".git-blame-ignore-revs"
+        | ".git-blame" => return "text-x-generic".to_string(),
+        ".dockerignore" | ".npmignore" | ".tokeignore" | ".ignore" => return "text-x-generic".to_string(),
+        ".env" | ".env.local" | ".env.production" | ".env.development"
+        | ".bashrc" | ".zshrc" | ".bash_profile" | ".profile" | ".bash_logout"
+        | ".vimrc" | ".gvimrc" | ".editorconfig" | ".nanorc" | ".tmux.conf"
+        | ".git-prompt.sh" => return "text-x-generic".to_string(),
+        ".eslintrc" | ".eslintrc.js" | ".eslintrc.json" | ".eslintrc.yml" | ".eslintrc.cjs"
+        | ".prettierrc" | ".prettierrc.js" | ".prettierrc.json" | ".prettierrc.yml"
+        | ".babelrc" | ".babelrc.js" | ".babelrc.json"
+        | ".stylelintrc" | ".stylelintrc.js" | ".stylelintrc.json"
+        | ".tern-config" | ".tern-project" => return "application-javascript".to_string(),
+        ".eslintignore" | ".prettierignore" | ".stylelintignore" => return "text-x-generic".to_string(),
+        "vagrantfile" => return "text-x-ruby".to_string(),
+        "procfile" | "procfile.dev" => return "text-x-generic".to_string(),
+        "requirements.txt" | "requirements-dev.txt" | "setup.py" | "pyproject.toml"
+        | "setup.cfg" | "tox.ini" | "pipfile" | "pipfile.lock" | "poetry.lock"
+        | "manifest.in" | "conftest.py" => return "text-x-python".to_string(),
+        "package.json" | "package-lock.json" | "yarn.lock" | "pnpm-lock.yaml"
+        | "npm-shrinkwrap.json" | ".npmrc" => return "application-javascript".to_string(),
+        "tsconfig.json" | "tsconfig.base.json" | "jsconfig.json" => return "text-typescript".to_string(),
+        "webpack.config.js" | "webpack.config.ts" | "webpack.config.cjs"
+        | "webpack.config.mjs" | "webpack.dev.js" | "webpack.prod.js"
+        | "webpack.common.js" | "rollup.config.js" | "rollup.config.mjs"
+        | "vite.config.js" | "vite.config.ts" | "vite.config.mjs"
+        | "esbuild.config.js" | "esbuild.config.mjs" | "babel.config.js"
+        | "jest.config.js" | "jest.config.ts" | "jest.config.cjs" | "jest.config.mjs"
+        | "vitest.config.ts" | "vitest.config.js" | "vitest.config.mjs"
+        | "playwright.config.ts" | "cypress.config.js" | "cypress.config.ts" => return "application-javascript".to_string(),
+        ".nvmrc" | ".node-version" | ".ruby-version" | ".python-version" | ".tool-versions"
+        | ".pythonrc" => return "text-x-generic".to_string(),
+        "go.mod" | "go.sum" | "go.work" | "go.work.sum" => return "text-x-go".to_string(),
+        "cargo.toml" | "cargo.lock" => return "text-x-rust".to_string(),
+        "build.gradle" | "build.gradle.kts" | "settings.gradle" | "settings.gradle.kts"
+        | "gradle.properties" | "gradlew" => return "text-x-groovy".to_string(),
+        "pom.xml" => return "text-x-java".to_string(),
+        "build.sbt" | "build.sc" | "plugins.sbt" => return "text-x-scala".to_string(),
+        "mix.exs" | "mix.lock" => return "text-x-elixir".to_string(),
+        "rebar.config" => return "text-x-erlang".to_string(),
+        "composer.json" | "composer.lock" => return "text-x-php".to_string(),
+        "dub.json" | "dub.sdl" => return "text-x-d".to_string(),
+        "shard.yml" | "shard.lock" => return "text-x-crystal".to_string(),
+        "packages.config" | "nuget.config" => return "text-x-csharp".to_string(),
+        ".gitlab-ci.yml" | ".github" => return "text-x-yaml".to_string(),
+        "jenkinsfile" | "jenkinsfile.groovy" => return "text-x-groovy".to_string(),
+        "justfile" | "justfile.config" | ".justfile" => return "application-x-shellscript".to_string(),
         _ => {}
     }
 
     match ext.as_str() {
         // ── Programming languages ──────────────────────────────────
-        "py" | "pyw" | "pyc" | "pyo" | "pyd" => "text-x-python",
+        // Python
+        "py" | "pyw" | "pyc" | "pyo" | "pyd" | "pyz" | "pyi" | "pyt" => "text-x-python",
+        // C / C++ / Objective-C
         "c" => "text-x-csrc",
         "h" => "text-x-chdr",
         "cpp" | "cc" | "cxx" | "c++" => "text-x-c++src",
         "hpp" | "hh" | "hxx" | "h++" => "text-x-c++hdr",
+        "m" => "text-x-objc",
+        "mm" => "text-x-objc",
+        // Rust / Go / Zig / D / Nim
         "rs" => "text-x-rust",
         "go" => "text-x-go",
-        "js" | "mjs" | "cjs" => "application-javascript",
-        "ts" | "jsx" | "tsx" => "text-typescript",
-        "java" | "class" => "text-x-java",
-        "rb" | "erb" => "text-x-ruby",
-        "php" => "text-x-php",
-        "sh" | "bash" | "zsh" | "fish" => "application-x-shellscript",
-        "pl" | "pm" => "text-x-perl",
-        "lua" => "text-x-lua",
-        "asm" | "s" => "text-x-asm",
-        "swift" => "text-x-swift",
+        "zig" => "text-x-zig",
+        "d" | "di" => "text-x-d",
+        "nim" | "nims" | "nimble" => "text-x-nim",
+        // JavaScript family
+        "js" | "mjs" | "cjs" | "jsx" => "application-javascript",
+        "ts" | "tsx" | "mts" | "cts" => "text-typescript",
+        "coffee" => "text-x-coffeescript",
+        // Java / Kotlin / Scala / Groovy / Clojure
+        "java" | "class" | "bsh" => "text-x-java",
         "kt" | "kts" => "text-x-kotlin",
         "scala" | "sbt" => "text-x-scala",
-        "cs" => "text-x-csharp",
-        "r" | "rmd" => "text-x-r",
-        "dart" => "text-x-dart",
-        "hs" | "lhs" => "text-x-haskell",
-        "f" | "f90" | "f95" | "f03" | "for" => "text-x-fortran",
-        "sql" => "text-x-sql",
-        "el" | "elc" => "text-x-elisp",
-        "clj" | "cljs" | "cljc" | "edn" => "text-x-clojure",
-        "ex" | "exs" | "eex" | "heex" => "text-x-elixir",
-        "erl" => "text-x-erlang",
-        "fs" | "fsx" | "fsi" => "text-x-fsharp",
-        "vb" | "vbnet" => "text-x-vb",
-        "pas" | "pp" => "text-x-pascal",
+        "groovy" | "gradle" | "gy" => "text-x-groovy",
+        "clj" | "cljs" | "cljc" | "cljd" | "edn" => "text-x-clojure",
+        // Ruby / PHP / Perl / Python frameworks
+        "rb" | "erb" | "rbs" => "text-x-ruby",
+        "php" | "php3" | "php4" | "php5" | "phtml" | "pht" => "text-x-php",
+        "pl" | "pm" | "pod" | "t" => "text-x-perl",
+        // Shell
+        "sh" | "bash" | "zsh" | "fish" | "ksh" | "csh" | "tcsh" => "application-x-shellscript",
+        // Lua / Tcl / Vim
+        "lua" | "luac" => "text-x-lua",
+        "tcl" | "tk" => "text-x-tcl",
+        "vim" | "viml" => "text-x-vim",
+        // Assembly
+        "asm" | "s" | "nasm" => "text-x-asm",
+        // Apple
+        "swift" => "text-x-swift",
+        "scpt" | "osa" | "osax" => "text-x-applescript",
+        // .NET / VB
+        "cs" | "csx" | "csi" => "text-x-csharp",
+        "fs" | "fsx" | "fsi" | "fsproj" => "text-x-fsharp",
+        "vb" | "vbnet" | "bas" | "frm" | "cls" | "vbs" => "text-x-vb",
+        // Pascal / Ada / Fortran
+        "pas" | "pp" | "dpr" | "lpr" => "text-x-pascal",
         "ada" | "adb" | "ads" => "text-x-ada",
+        "f" | "f90" | "f95" | "f03" | "f08" | "for" | "f77" => "text-x-fortran",
+        // Functional
+        "hs" | "lhs" | "cabal" => "text-x-haskell",
         "ml" | "mli" => "text-x-ml",
         "elm" => "text-x-elm",
-        "vue" => "text-x-vue",
-        "svelte" => "text-x-svelte",
-        "zig" => "text-x-zig",
-        "nim" | "nims" => "text-x-nim",
+        "ex" | "exs" | "eex" | "heex" | "leex" => "text-x-elixir",
+        "erl" | "hrl" => "text-x-erlang",
+        "scm" | "sps" | "sls" | "rkt" | "rktl" => "text-x-scheme",
+        "lisp" | "lsp" | "cl" => "text-x-lisp",
         "v" | "vh" | "sv" | "svh" => "text-x-verilog",
         "vhd" | "vhdl" => "text-x-vhdl",
-        "graphql" | "gql" => "text-x-graphql",
-        "proto" => "text-x-protobuf",
-        "thrift" => "text-x-thrift",
-        "sol" => "text-x-solidity",
+        "lean" => "text-x-lean",
+        "idr" => "text-x-idris",
+        "agda" => "text-x-agda",
+        "thy" => "text-x-isabelle",
+        "re" | "rei" => "text-x-reason",
+        "res" | "resi" => "text-x-rescript",
+        "purs" => "text-x-purescript",
+        "dhall" => "text-x-dhall",
+        "st" | "gst" => "text-x-smalltalk",
+        // Scientific / statistical
+        "r" | "rmd" | "rdata" | "rds" | "rda" => "text-x-r",
         "jl" => "text-x-julia",
-        "d" => "text-x-d",
+        "dart" => "text-x-dart",
         "cr" => "text-x-crystal",
         "vala" | "vapi" => "text-x-vala",
-        "vim" | "viml" => "text-x-vim",
         "awk" => "application-x-awk",
-        "tcl" => "text-x-tcl",
-        "groovy" | "gradle" => "text-x-groovy",
-        "cabal" => "text-x-haskell",
+        // Web components
+        "vue" => "text-x-vue",
+        "svelte" => "text-x-svelte",
+        // Query / schema
+        "sql" | "psql" | "pgsql" | "mysql" => "text-x-sql",
+        "graphql" | "gql" => "text-x-graphql",
+        "proto" | "prototxt" => "text-x-protobuf",
+        "thrift" => "text-x-thrift",
+        "sol" => "text-x-solidity",
+        // Misc / legacy
+        "cob" | "cbl" | "ccp" | "cpy" => "text-x-cobol",
+        "pl1" | "pli" => "text-x-pl1",
+        "fth" | "4th" | "forth" | "fr" => "text-x-forth",
+        "pro" | "prolog" => "text-x-prolog",
+        "ahk" => "text-x-ahk",
+        "au3" => "text-x-autoit",
+        "el" | "elc" => "text-x-elisp",
+        "gleam" => "text-x-gleam",
+        "merl" | "odin" | "jai" | "wren" | "carp" | "roc" | "moon" | "moonbit"
+        | "nu" | "janet" | "factor" | "pop" | "dwm" | "red"
+        | "rebol" | "r2" | "r3" => "text-x-generic",
 
         // ── Build / config / project files ────────────────────────
         "mk" => "text-x-makefile",
@@ -118,7 +203,7 @@ fn file_icon(path: &str) -> String {
         "toml" => "text-x-toml",
         "ini" | "cfg" | "conf" | "config" | "rc" | "properties" | "env" => "text-x-generic",
         "sln" | "csproj" | "vbproj" => "text-x-csharp",
-        "xcodeproj" | "xcworkspace" | "podspec" => "text-x-generic",
+        "podspec" => "text-x-generic",
         "gemspec" => "text-x-ruby",
         "nupkg" => "text-x-csharp",
         "vsix" => "text-x-generic",
@@ -144,12 +229,15 @@ fn file_icon(path: &str) -> String {
         // ── Documents ──────────────────────────────────────────────
         "pdf" => "application-pdf",
         "doc" | "docx" | "dot" | "dotx" | "wps" => "application-msword",
+        "docm" | "dotm" => "application-msword",
         "odt" | "ott" | "fodt" => "application-vnd.oasis.opendocument.text",
         "pages" => "x-office-document",
         "xls" | "xlsx" | "xlt" | "xltx" => "application-vnd.ms-excel",
+        "xlsm" | "xlsb" | "xlam" | "xltm" => "application-vnd.ms-excel",
         "ods" | "ots" | "fods" => "application-vnd.oasis.opendocument.spreadsheet",
         "numbers" => "x-office-spreadsheet",
         "ppt" | "pptx" | "pps" | "ppsx" => "application-vnd.ms-powerpoint",
+        "pptm" | "potm" | "ppsm" => "application-vnd.ms-powerpoint",
         "odp" | "otp" | "fodp" => "application-vnd.oasis.opendocument.presentation",
         "keynote" => "x-office-presentation",
         "odg" | "otg" | "fodg" => "application-vnd.oasis.opendocument.graphics",
@@ -160,6 +248,63 @@ fn file_icon(path: &str) -> String {
         "cbz" | "cbr" | "cb7" | "cbt" | "cba" => "application-x-cbr",
         "chm" => "application-x-chm",
         "fb2" => "application-x-fictionbook+xml",
+        "vsd" | "vsdx" | "vss" | "vst" | "vsdm" | "vssx" | "vstx" | "vssm" | "vstm" => "application-vnd.ms-visio",
+        "mpp" | "mpt" | "mpd" => "application-vnd.ms-project",
+        "pub" => "application-vnd.ms-publisher",
+        "one" | "onetoc2" | "onepkg" => "x-office-document",
+        "thmx" => "application-vnd.ms-office",
+        // Google Docs shortcuts (use x-office-* icons)
+        "gdoc" => "x-office-document",
+        "gsheet" => "x-office-spreadsheet",
+        "gslides" => "x-office-presentation",
+        "gdraw" => "x-office-drawing",
+        "gform" => "x-office-document",
+        "gsite" => "x-office-document",
+        "gscript" => "application-javascript",
+        "gmap" => "x-office-document",
+        "gpres" => "x-office-presentation",
+        // Email / contacts / calendar
+        "eml" | "emlx" | "emlxpart" => "message-rfc822",
+        "msg" | "oft" | "ost" | "pst" => "x-office-address-book",
+        "mbox" | "msf" => "x-office-address-book",
+        "vcf" | "vcard" => "x-office-address-book",
+        "ics" | "ical" | "icalendar" | "vcs" | "ifb" => "x-office-calendar",
+        // Mathematica / Maple / Matlab / scientific
+        "nbs" | "wl" | "wls" | "ma" | "mb" | "nb" => "application-x-mathematica",
+        "mws" | "mw" => "application-x-maple",
+        "mlx" => "application-x-matlab",
+        // Stata / SPSS / SAS
+        "do" | "dta" | "smcl" | "stsem" => "application-x-stata",
+        "por" | "spo" => "application-x-spss",
+        "sas" | "sas7bdat" | "sas7bcat" | "sas7bndx" => "application-x-sas",
+        // Scientific data formats
+        "fits" | "fit" | "fts" => "image-x-generic",
+        "feather" | "npy" | "npz" => "application-x-generic-data",
+        "pkl" | "pickle" => "application-x-python-bytecode",
+        "msgpack" | "bson" | "ubjson" => "application-x-generic-data",
+        "hjson" | "cson" | "ison" => "application-json",
+        // Bioinformatics / chemistry
+        "fasta" | "fa" | "fna" | "faa" | "mpfa" => "text-x-fasta",
+        "fastq" | "fq" => "text-x-fasta",
+        "sam" | "bam" | "bai" | "cram" | "crai" => "text-x-fasta",
+        "bcf" => "text-x-fasta",
+        "gbk" | "gb" | "genbank" | "gbf" => "text-x-fasta",
+        "gff" | "gff3" | "gtf" | "gtf2" => "text-x-fasta",
+        "bed" | "bed12" | "bedpe" | "bedgraph" => "text-x-fasta",
+        "mol" | "sdf" | "mol2" | "mdl" => "chemical-x-mdl-molfile",
+        "xyz" => "chemical-x-xyz",
+        "smi" | "smiles" | "can" => "chemical-x-smiles",
+        "inchi" | "inchikey" => "chemical-x-inchi",
+        "cif" | "ent" => "chemical-x-pdb",
+        "mmcif" | "pdb1" => "chemical-x-pdb",
+        "nex" | "nexus" | "nwk" | "newick" => "text-x-fasta",
+        "phylip" | "ph" => "text-x-fasta",
+        // Music notation
+        "mscz" | "mscx" | "msc" | "musescore" => "application-x-musescore",
+        "ly" | "lilypond" | "ily" => "text-x-lilypond",
+        "musicxml" | "mxl" | "mei" => "application-x-musicxml",
+        "mus" | "sib" | "musx" => "application-x-musescore",
+        "abc" => "text-x-abc",
 
         // ── Images ─────────────────────────────────────────────────
         "png" | "jpg" | "jpeg" | "jfif" | "gif" | "bmp" | "webp" | "tiff"
@@ -177,43 +322,51 @@ fn file_icon(path: &str) -> String {
         | "m4b" | "m4p" | "wma" | "aiff" | "aif" | "aifc" | "au" | "snd"
         | "amr" | "gsm" | "ra" | "rm" | "shn" | "ape" | "wv" | "tta"
         | "dsf" | "dff" | "mod" | "s3m" | "xm" | "it" | "mtm" | "ult"
-        | "m3u" | "m3u8" | "pls" | "xspf" | "asx" => "audio-x-generic",
-        "midi" | "mid" | "kar" => "audio-midi",
+        | "m15" | "mka" | "als" | "caf" | "cda" | "dts" | "vqf" | "voc"
+        | "pcm" | "vox" | "oma" | "aa" | "aax" | "m4r"
+        | "spx" | "mpc" | "mp+" | "ofr" | "rka" | "rkau" | "pac" | "lpac"
+        | "dwd" | "3ga" | "mid" => "audio-x-generic",
+        "midi" | "kar" => "audio-midi",
 
         // ── Video ──────────────────────────────────────────────────
         "mp4" | "m4v" | "mkv" | "avi" | "webm" | "mov" | "qt" | "wmv"
         | "flv" | "f4v" | "mpg" | "mpeg" | "mpe" | "mp2" | "m2v"
-        | "vob" | "mts" | "m2ts" | "3gp" | "3g2" | "ogv"
-        | "rmvb" | "asf" | "divx" | "y4m" => "video-x-generic",
+        | "vob" | "m2ts" | "3gp" | "3g2" | "ogv"
+        | "rmvb" | "asf" | "divx" | "y4m" | "mk3d" | "vro" | "evo"
+        | "ram" | "rv" | "smil" | "rvx" | "bdmv"
+        | "wtv" | "dv" | "dif" => "video-x-generic",
 
         // ── Archives / packages ────────────────────────────────────
         "zip" | "tar" | "gz" | "tgz" | "bz2" | "tbz" | "tbz2" | "xz" | "txz"
         | "7z" | "rar" | "lz" | "lzip" | "lzma" | "tlz" | "zst" | "zstd"
         | "cpio" | "ar" | "a" | "lha" | "lzh" | "lzx" | "ace" | "cab"
-        | "sit" | "sitx" | "pak" => "application-x-archive",
+        | "sit" | "sitx" | "pak" | "lz4" | "lzo" | "br" | "brotli"
+        | "zpaq" | "zpaq1" | "gzp" | "bh" | "zlib" | "rz" | "ha"
+        | "kex" | "keks" => "application-x-archive",
         "deb" => "application-x-deb",
         "rpm" => "application-x-rpm",
         "apk" => "application-vnd.android.package-archive",
         "appimage" => "application-x-executable",
         "snap" => "application-x-snap",
         "flatpak" | "flatpakref" | "flatpakrepo" => "application-x-flatpak",
-        "jar" | "war" | "ear" => "application-x-java-archive",
+        "jar" | "war" | "ear" | "aar" => "application-x-java-archive",
         "whl" => "application-x-python-wheel",
         "egg" => "application-x-python-bytecode",
         "gem" => "application-x-ruby",
         "crate" => "text-x-rust",
+        "xpi" => "application-x-xpinstall",
+        "crx" => "application-x-chrome-extension",
 
         // ── Databases / data ───────────────────────────────────────
-        "db" | "sqlite" | "sqlite3" | "db3" => "application-x-sqlite3",
+        "db" | "sqlite" | "sqlite3" | "db3" | "duckdb" => "application-x-sqlite3",
         "accdb" | "mdb" => "application-vnd.ms-access",
         "dbf" => "application-x-dbf",
         "h5" | "hdf5" | "nc4" | "cdf" => "application-x-hdf",
         "mat" => "application-x-matlab",
-        "rds" | "rdata" => "text-x-r",
         "parquet" | "avro" | "arrow" | "orc" => "application-x-generic-data",
 
         // ── Executables / libraries / object files ────────────────
-        "exe" | "bin" | "run" | "app" => "application-x-executable",
+        "exe" | "bin" | "run" | "app" | "out" => "application-x-executable",
         "so" | "dll" | "dylib" => "application-x-sharedlib",
         "o" | "ko" => "application-x-object",
         "lib" => "application-x-archive",
@@ -221,6 +374,8 @@ fn file_icon(path: &str) -> String {
         "dex" => "application-x-dex",
         "node" => "application-x-nodejs",
         "msi" => "application-x-msi",
+        "cmd" | "bat" | "com" | "ps1" | "psm1" => "application-x-executable",
+        "xbe" | "xex" => "application-x-executable",
 
         // ── Fonts ──────────────────────────────────────────────────
         "ttf" | "otf" | "woff" | "woff2" | "eot" | "ttc" | "pfb" | "pfa"
@@ -228,23 +383,104 @@ fn file_icon(path: &str) -> String {
 
         // ── 3D / CAD / model files ─────────────────────────────────
         "blend" | "blend1" => "application-x-blender",
-        "fbx" | "gltf" | "glb" | "stl" | "dae" | "3ds" | "ply" | "iges"
+        "fbx" | "gltf" | "glb" | "dae" | "3ds" | "ply" | "iges"
         | "igs" | "step" | "stp" | "dwg" | "dxf" | "skp" | "x3d"
-        | "lwo" | "lws" | "c4d" => "x-model",
+        | "lwo" | "lws" | "c4d" | "u3d" | "3mf" | "amf" | "max" | "xsi"
+        | "hip" | "hiplc" | "hipnc" | "otl" | "lxo" | "3dm" | "pov"
+        | "povray" | "rib" | "bvh" => "x-model",
         "obj" => "text-x-generic",
+        "wrl" | "wrml" | "vrml" => "model-vrml",
+        "mtl" => "text-x-generic",
+        // FreeCAD / OpenSCAD
+        "fcstd" | "f3d" | "fcstd1" => "application-x-freecad",
+        "scad" => "application-x-openscad",
+        // SolidWorks / Inventor
+        "sldprt" | "sldasm" | "slddrw" | "sldftn" | "ipt" | "iam" | "ipn" => "x-model",
+        // GIS layer files (ArcGIS)
+        "lyr" | "mxd" | "lpk" | "lpkx" => "x-model",
 
         // ── G-code / CAM ──────────────────────────────────────────
-        "gcode" | "gco" | "nc" | "cnc" | "tap" => "text-x-gcode",
+        "gcode" | "gco" | "nc" | "cnc" | "tap" | "ngc" | "g" | "gp" | "nc1"
+        | "min" | "k" => "text-x-gcode",
 
         // ── Disk / VM images ───────────────────────────────────────
-        "iso" | "img" | "cue" | "nrg" | "dmg" | "vmdk" | "vdi" | "qcow2"
+        "iso" | "img" | "nrg" | "dmg" | "vmdk" | "vdi" | "qcow2"
         | "vhdx" | "wim" | "ova" | "ovf" | "sparseimage"
-        | "sparsebundle" => "application-x-cd-image",
+        | "sparsebundle" | "mds" | "mdf" | "ccd" | "toast"
+        | "vmtk" | "box" | "vmwarevm" => "application-x-cd-image",
 
         // ── Certificates / keys ────────────────────────────────────
         "pem" | "crt" | "cer" | "cert" | "p12" | "pfx" | "der" | "csr"
-        | "key" => "application-x-pem-key",
-        "sig" | "gpg" | "pgp" | "asc" => "application-x-pgp-key",
+        | "key" | "keystore" | "jks" | "ovpn" | "vpn" => "application-x-pem-key",
+        "sig" | "asc" | "gpg" | "pgp" => "application-x-pgp-key",
+
+        // ── GIS / mapping / GPS ─────────────────────────────────────
+        "shp" | "shx" | "prj" | "qpj" | "sbn" | "sbx"
+        | "fbn" | "ain" | "aih" | "ixs" | "mxs"
+        | "mif" | "mapinfo" => "application-x-shapefile",
+        "kml" | "kmz" => "application-vnd.google-earth.kml+xml",
+        "gpx" => "application-x-gpx",
+        "osm" => "application-x-osm",
+        "gml" | "gfs" => "text-xml",
+        "mbtiles" => "application-x-archive",
+        "gpkg" => "application-x-sqlite3",
+        "grd" | "bil" | "flt" => "image-x-generic",
+        "vrt" => "text-x-generic",
+        "qgs" | "qgsz" | "qgz" | "qml" => "application-x-qgis",
+
+        // ── Game development ───────────────────────────────────────
+        // Godot
+        "gd" | "gdscript" | "tscn" | "tres" | "scn" | "escn"
+        | "import" | "godot" => "application-x-godot",
+        // Unity
+        "prefab" | "asset" | "unity" | "anim" | "controller"
+        | "shader" | "cginc" | "hlsl" | "shaderlab" | "uxml" | "uss"
+        | "meta" | "preset" => "application-x-unity",
+        // Unreal Engine
+        "uasset" | "umap" | "ublueprint" | "ucurve" | "uparticle"
+        | "umaterial" | "umaterialinstance" | "uinterface" | "usf" | "ush"
+        => "application-x-unreal",
+        // GameMaker / RPG Maker
+        "gmx" | "yy" | "yyp" | "yyz" | "yyc" => "application-x-gamemaker",
+        "rpgproject" | "rpgmap" | "rpgsave" | "rvdata" | "rvdata2"
+        => "application-x-rpgmaker",
+        // Source / Quake / idTech engines
+        "vmt" | "vtf" | "vpk" | "vvd" | "pk3" | "pk4" | "roq" => "x-model",
+        "bsp" | "ani" | "map" => "x-model",
+
+        // ── Infrastructure as Code / config ────────────────────────
+        "tf" | "tfvars" | "tfstate" | "tfplan" | "tfbackend" => "text-x-terraform",
+        "hcl" | "hcl2" | "nomad" | "nomadvars" => "text-x-hcl",
+        "nix" => "application-x-nix",
+        "star" | "bzl" | "bazel" | "sky" => "text-x-bazel",
+        "epp" => "text-x-puppet",
+        "dockerfile" | "containerfile" => "text-x-dockerfile",
+        "k8s" | "kube" | "kustomization" | "helm" | "chart" | "helmignore"
+        => "application-x-yaml",
+        "pkt" | "hurl" | "http" | "rest" => "text-x-generic",
+        "pcap" | "pcapng" | "cap" | "capx" => "application-x-pcap",
+        "jsonnet" | "libsonnet" => "text-x-generic",
+
+        // ── Mobile / iOS dev ────────────────────────────────────────
+        "xib" | "storyboard" | "nib" | "storyboardc" => "application-x-storyboard",
+        "xcassets" | "xcdatamodeld" | "xcmappingmodel" | "xcodeproj"
+        | "xcworkspace" | "xcconfig" | "xcscheme" | "xctest" | "xctestplan"
+        => "application-x-xcode",
+        "aidl" | "arsc" | "smali" | "odex" | "vdex" => "application-x-android",
+        "aab" => "application-vnd.android.package-archive",
+
+        // ── Subtitles ──────────────────────────────────────────────
+        "srt" | "ssa" | "ass" | "sub" | "idx" | "sup" | "vtt" | "webvtt"
+        | "scc" | "sbv" | "ttml" | "dfxp" | "lrc" => "text-x-subtitle",
+
+        // ── Game saves ─────────────────────────────────────────────
+        "save" | "sav" | "gsl" | "gci" | "srm" | "srm2" => "application-x-game-save",
+
+        // ── Notes apps ─────────────────────────────────────────────
+        "enex" | "note" | "notebook" => "x-office-document",
+        "obsidian" => "text-markdown",
+        "roam" | "roamedit" | "notion" | "notion-cache" => "text-x-generic",
+        "bear" | "bearbak" => "text-markdown",
 
         // ── Other common types ────────────────────────────────────
         "torrent" => "application-x-bittorrent",
@@ -254,6 +490,8 @@ fn file_icon(path: &str) -> String {
         "url" | "webloc" => "text-x-uri",
         "po" | "pot" | "mo" | "gmo" => "text-x-gettext-translation",
         "qmd" => "text-x-generic",
+        "scope" | "locale" | "locales" | "manifest" => "text-x-generic",
+        "directory" => "application-x-desktop",
 
         // ── Default: generic text file ────────────────────────────
         _ => "text-x-generic",
