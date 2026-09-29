@@ -120,7 +120,85 @@ function toggleWindow() {
   else showWindow();
 }
 
+// ── Icon resolution (Python3 + GTK3) ───────────────────────────────────
+
+// Cache: freedesktop icon name → data URL (or null if not found).
+// Persisted across searches so we only call Python3 for new icon names.
+const iconCache = {};
+
+// Python3 script that resolves freedesktop icon names to file paths via
+// GTK3's IconTheme, reads the file, and outputs base64 data URLs.
+const ICON_PY_SCRIPT = [
+  'import gi, sys, base64',
+  'gi.require_version("Gtk", "3.0")',
+  'from gi.repository import Gtk',
+  'theme = Gtk.IconTheme.get_default()',
+  'def lookup(name):',
+  '    icon = theme.lookup_icon(name, 48, 0)',
+  '    if icon: return icon',
+  '    # Fallback: if specific MIME icon missing, try generic category icon.',
+  '    for prefix, fallback in [("text-", "text-x-generic"), ("application-", "application-x-generic"), ("image-", "image-x-generic"), ("audio-", "audio-x-generic"), ("video-", "video-x-generic")]:',
+  '        if name.startswith(prefix) and name != fallback:',
+  '            return theme.lookup_icon(fallback, 48, 0)',
+  '    return theme.lookup_icon("text-x-generic", 48, 0)',
+  'for name in sys.argv[1:]:',
+  '    icon = lookup(name)',
+  '    if icon:',
+  '        path = icon.get_filename()',
+  '        try:',
+  '            with open(path, "rb") as f:',
+  '                data = base64.b64encode(f.read()).decode()',
+  '                ext = path.rsplit(".", 1)[-1].lower()',
+  '                mime = "image/svg+xml" if ext == "svg" else "image/" + ext',
+  '                sys.stdout.write(name + "\\t" + mime + "\\t" + data + "\\n")',
+  '        except Exception:',
+  '            sys.stdout.write(name + "\\tNOTFOUND\\t\\n")',
+  '    else:',
+  '        sys.stdout.write(name + "\\tNOTFOUND\\t\\n")',
+].join('\n');
+
+// Resolve a list of freedesktop icon names to data URLs.
+// Returns a map: { iconName: "data:image/png;base64,..." | null }.
+function resolveIcons(iconNames) {
+  return new Promise((resolve) => {
+    const unique = [...new Set(iconNames)].filter(Boolean);
+    const uncached = unique.filter((n) => !(n in iconCache));
+
+    if (uncached.length === 0) {
+      const result = {};
+      for (const n of unique) result[n] = iconCache[n];
+      resolve(result);
+      return;
+    }
+
+    execFile('python3', ['-c', ICON_PY_SCRIPT, ...uncached], (err, stdout) => {
+      if (!err && stdout) {
+        for (const line of stdout.trim().split('\n')) {
+          if (!line) continue;
+          const [name, mime, data] = line.split('\t');
+          if (!name) continue;
+          if (mime === 'NOTFOUND' || !data) {
+            iconCache[name] = null;
+          } else {
+            iconCache[name] = `data:${mime};base64,${data}`;
+          }
+        }
+      } else {
+        for (const n of uncached) iconCache[n] = null;
+      }
+      const result = {};
+      for (const n of unique) result[n] = iconCache[n] ?? null;
+      resolve(result);
+    });
+  });
+}
+
 // ── IPC handlers (called by the renderer via preload.cjs) ──────────────
+
+// Resolve freedesktop icon names to data URLs (called after search results arrive).
+ipcMain.handle('get-icons', async (_event, iconNames) => {
+  return resolveIcons(iconNames);
+});
 
 // Run a search: shell out to the Rust binary's `--search` JSON mode.
 ipcMain.handle('search', async (_event, query) => {

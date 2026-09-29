@@ -55,4 +55,6 @@ pub struct DisplayItem {
     pub subtitle: String,
     /// The action to run when this row is activated.
     pub action: Action,
+    /// True if this row is a content (full-text) match rather than a file hit.
+    pub is_content: bool,
 }

@@ -94,6 +94,7 @@ html, body, #root {
 }
 
 .result-icon {
+  position: relative;
   width: 28px;
   height: 28px;
   display: flex;
@@ -102,8 +103,29 @@ html, body, #root {
   flex-shrink: 0;
 }
 
-.icon-emoji {
-  font-size: 18px;
+.icon-img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.icon-fallback {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.content-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0a84ff;
+  border-radius: 50%;
+  color: #fff;
+  border: 1.5px solid rgba(24, 24, 30, 0.85);
 }
 
 .result-text {

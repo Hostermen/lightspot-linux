@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   hide: () => ipcRenderer.send('hide'),
   // Ask the main process to resize the window to fit the results list.
   resize: (height) => ipcRenderer.invoke('resize', height),
+  // Resolve freedesktop icon names to data URLs.
+  getIcons: (iconNames) => ipcRenderer.invoke('get-icons', iconNames),
   // Register a callback for when the main process signals the window was shown.
   onShow: (callback) => ipcRenderer.on('spotlight-show', () => callback()),
 });

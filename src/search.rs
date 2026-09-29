@@ -12,6 +12,82 @@ use crate::file_search;
 use crate::model::{Action, AppEntry, ContentHit, DisplayItem, FileHit};
 use std::path::Path;
 
+/// Map a file path to a freedesktop MIME-type icon name based on its
+/// extension. The Electron frontend resolves these via GTK3's icon
+/// theme to show proper file-type icons (Python, PDF, C, etc.).
+fn file_icon(path: &str) -> String {
+    let ext = Path::new(path)
+        .extension()
+        .map(|e| e.to_string_lossy().to_lowercase())
+        .unwrap_or_default();
+    match ext.as_str() {
+        // Programming languages
+        "py" => "text-x-python",
+        "c" => "text-x-csrc",
+        "h" => "text-x-chdr",
+        "cpp" | "cc" | "cxx" => "text-x-c++src",
+        "hpp" | "hh" | "hxx" => "text-x-c++hdr",
+        "rs" => "text-x-rust",
+        "go" => "text-x-go",
+        "js" | "mjs" => "application-javascript",
+        "ts" => "text-typescript",
+        "java" => "text-x-java",
+        "rb" => "text-x-ruby",
+        "php" => "text-x-php",
+        "sh" | "bash" => "application-x-shellscript",
+        "pl" => "text-x-perl",
+        "lua" => "text-x-lua",
+        "asm" | "s" => "text-x-asm",
+        "swift" => "text-x-swift",
+        "kt" | "kts" => "text-x-kotlin",
+        "scala" => "text-x-scala",
+        "cs" => "text-x-csharp",
+        // Web / markup
+        "html" | "htm" => "text-html",
+        "css" | "scss" | "sass" => "text-css",
+        "xml" => "text-xml",
+        "md" | "markdown" => "text-markdown",
+        "json" => "application-json",
+        "yaml" | "yml" => "text-x-yaml",
+        "toml" => "text-x-toml",
+        "ini" | "cfg" | "conf" => "text-x-generic",
+        // Documents
+        "pdf" => "application-pdf",
+        "doc" | "docx" => "application-msword",
+        "odt" => "application-vnd.oasis.opendocument.text",
+        "xls" | "xlsx" => "application-vnd.ms-excel",
+        "ods" => "application-vnd.oasis.opendocument.spreadsheet",
+        "ppt" | "pptx" => "application-vnd.ms-powerpoint",
+        "odp" => "application-vnd.oasis.opendocument.presentation",
+        "tex" | "latex" => "text-x-tex",
+        "epub" => "application-epub+zip",
+        // Images
+        "png" | "jpg" | "jpeg" | "gif" | "bmp" | "webp" | "tiff" | "tif" | "ico" => "image-x-generic",
+        "svg" => "image-svg+xml",
+        // Audio
+        "mp3" | "wav" | "flac" | "ogg" | "aac" | "m4a" | "wma" => "audio-x-generic",
+        // Video
+        "mp4" | "mkv" | "avi" | "webm" | "mov" | "wmv" | "flv" => "video-x-generic",
+        // Archives
+        "zip" | "tar" | "gz" | "bz2" | "xz" | "7z" | "rar" => "application-x-archive",
+        "deb" => "application-x-deb",
+        "rpm" => "application-x-rpm",
+        "appimage" => "application-x-executable",
+        // Data
+        "csv" => "text-csv",
+        "tsv" => "text-x-generic",
+        "db" | "sqlite" | "sqlite3" => "application-x-sqlite3",
+        // Executables / libraries
+        "exe" | "bin" => "application-x-executable",
+        "so" | "dll" => "application-x-sharedlib",
+        // Log
+        "log" => "text-x-log",
+        // Default: generic text file
+        _ => "text-x-generic",
+    }
+    .to_string()
+}
+
 /// Combine apps + file hits for a query into one display list.
 ///
 /// Ordering:
@@ -44,6 +120,7 @@ pub fn build_results(
                 title: format!("= {}", f),                         // e.g. "= 8"
                 subtitle: "Calculator  ·  Enter to copy".to_string(),
                 action: Action::CopyResult(f),                     // Enter → clipboard
+                is_content: false,
             });
         }
     }
@@ -68,6 +145,7 @@ pub fn build_results(
             title: a.name.clone(),
             subtitle: "Application".to_string(),
             action: Action::LaunchApp(a.app_id.clone()),
+            is_content: false,
         });
     }
 
@@ -84,10 +162,11 @@ pub fn build_results(
             .map(|p| p.to_string_lossy().to_string())
             .unwrap_or_default();
         items.push(DisplayItem {
-            icon: "text-x-generic".to_string(),
+            icon: file_icon(&f.path),
             title: name,
             subtitle: dir,
             action: Action::OpenFile(f.path.clone()),
+            is_content: false,
         });
     }
 
@@ -101,10 +180,11 @@ pub fn build_results(
             .map(|s| s.to_string_lossy().to_string())
             .unwrap_or_else(|| c.path.clone());
         items.push(DisplayItem {
-            icon: "content-match".to_string(),
+            icon: file_icon(&c.path),
             title: name,
             subtitle: c.snippet.clone(),
             action: Action::OpenFile(c.path.clone()),
+            is_content: true,
         });
     }
 
@@ -174,12 +254,13 @@ pub fn search_json(query: &str) -> String {
         .iter()
         .map(|i| {
             format!(
-                r#"{{"title":"{}","subtitle":"{}","icon":"{}","action_type":"{}","action_data":"{}"}}"#,
+                r#"{{"title":"{}","subtitle":"{}","icon":"{}","action_type":"{}","action_data":"{}","is_content":{}}}"#,
                 escape_json(&i.title),
                 escape_json(&i.subtitle),
                 escape_json(&i.icon),
                 action_type(&i.action),
                 escape_json(action_data(&i.action)),
+                i.is_content,
             )
         })
         .collect();
