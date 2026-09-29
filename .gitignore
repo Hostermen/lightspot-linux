@@ -6,6 +6,9 @@
 /electron/node_modules
 /electron/dist
 
+# Release packaging output (built artifacts — published via GitHub Releases)
+/dist
+
 # Runtime sockets
 *.sock
 /tmp/

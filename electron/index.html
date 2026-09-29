@@ -1,12 +1,18 @@
 <!DOCTYPE html>
+<!-- index.html — the page Vite builds the React app into.
+     The main process loads this from electron/dist/ in production, or
+     Vite serves it from http://localhost:5173 in dev mode. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <!-- viewport meta keeps the transparent page sized to the BrowserWindow -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Spotlight</title>
 </head>
 <body>
+  <!-- React mounts here (see src/main.jsx) -->
   <div id="root"></div>
+  <!-- Vite entry — bundled and hashed in the production build -->
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

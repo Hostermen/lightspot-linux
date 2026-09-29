@@ -1,9 +1,0 @@
-{
-    "uuid": "spotlight-center@spotlight-files",
-    "name": "Spotlight Files",
-    "description": "macOS Spotlight-style launcher with frosted glass, centered popup, app + file search via plocate, and double-Shift hotkey",
-    "shell-version": ["45", "46", "47"],
-    "version": 2,
-    "session-modes": ["user"],
-    "stylesheet": "stylesheet.css"
-}
