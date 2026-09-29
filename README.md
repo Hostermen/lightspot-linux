@@ -1,195 +1,157 @@
 # Spotlight Linux
 
-A lightweight **macOS Spotlight-style launcher for Linux**: instant **app search**, **file search** (via `plocate`), and a built-in **calculator**. Summons with **double-Shift** (just like macOS), appears **centered and translucent** on screen.
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Rust](https://img.shields.io/badge/Rust-stable-orange.svg)](https://www.rust-lang.org/)
+[![Electron](https://img.shields.io/badge/Electron-31-47848F.svg)](https://www.electronjs.org/)
 
-Built as two cooperating pieces:
+A Spotlight-style launcher for Linux. Search applications and files, evaluate math expressions, and launch results instantly — summoned with a double-Shift, just like macOS.
 
-- **Rust binary** (`spotlight-files`) — the search backend and the double-Shift hotkey daemon. Listens for the hotkey at the kernel level via `evdev` and signals the UI over a Unix socket.
-- **Electron + React** app — the frosted-glass UI. Talks to the Rust backend over IPC for search results, and over `/tmp/spotlight-files.sock` for show/hide/toggle.
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│  double-Shift  ──evdev──►  Rust daemon  ──"toggle"──►  Unix socket  │
-│                                                                    │
-│  Electron app ◄──socket──┘  shows/hides the window                │
-│                                                                    │
-│  User types ──IPC──►  Electron  ──`spotlight-files --search Q`──► │
-│                       Rust (apps + plocate + calc) ──JSON──►       │
-│  Electron renders results  ──Enter──►  gtk-launch / xdg-open     │
-└──────────────────────────────────────────────────────────────────┘
-```
+Spotlight Linux is built as a small, persistent Rust daemon paired with an Electron + React frontend. The daemon captures the hotkey at the kernel level via `evdev` and serves search results as JSON; the Electron app renders the frosted-glass UI and forwards activations to `gtk-launch` / `xdg-open`.
 
 ## Features
 
-- **Double-Shift hotkey** — press Shift twice within 280 ms to summon/dismiss. Uses `evdev` kernel-level input, so it works on both Wayland and X11 and doesn't interfere with normal typing. Auto-repeat is ignored.
-- **macOS Spotlight look** — translucent dark card (78% opacity), rounded corners, magnifier icon, blue selection highlight. Centered ~12% above the vertical middle of the screen.
-- **App search** — fuzzy-matches `.desktop` entries across all XDG application directories; launches via `gtk-launch`.
-- **File search** — instant results from the `plocate` index (a compressed full-filename index, refreshed daily). `plocate` typically answers in <10 ms with near-zero idle cost.
-- **Calculator** — inline math (`2+2`, `(1+2)*3`, `2^10`, `20/8`); Enter copies the result to the clipboard.
-- **Keyboard-first** — type to filter, Arrow keys to navigate, Enter to open, Esc to dismiss.
-- **Persistent window** — the Electron app stays running in the background; summoning is instant.
-- **Click-outside / blur to dismiss**.
-- **Fallback hotkey** — Super+Space is also registered by the Electron app.
+- **Double-Shift hotkey** — kernel-level `evdev` capture works on both Wayland and X11 without interfering with normal typing. Super+Space is registered as a fallback.
+- **Unified search** — fuzzy-matched applications (from `.desktop` entries) and instant file lookup via the `plocate` index, plus an inline calculator. Results stream in after a 150 ms debounce.
+- **Native look** — a transparent, centered card with backdrop blur, rounded corners, and blue selection highlight, positioned ~12% above screen center to match macOS Spotlight.
+- **Keyboard-first** — type to filter, arrow keys to navigate, Enter to activate, Esc to dismiss.
+- **Lightweight backend** — the Rust binary is under 600 KB. File search reads a compressed `plocate` index in a single scan, with no background indexer or daemon of its own.
 
 ## Requirements
 
-- Rust ≥ 1.74 (edition 2021) — to build the search/hotkey backend
-- Node.js ≥ 18 and npm — to build the Electron/React frontend
+- An X11 or Wayland desktop session
 - `plocate` for file search (optional but recommended)
-- Membership in the `input` group — the double-Shift hotkey reads `/dev/input/event*` via evdev
-- A running X or Wayland session
-
-Install on Ubuntu/Debian:
+- Membership in the `input` group for the double-Shift hotkey (reads `/dev/input/event*`)
 
 ```bash
 sudo apt install plocate
-sudo updatedb.plocate          # build/refresh the filename index
-sudo usermod -aG input "$USER"  # hotkey access — log out and back in after
+sudo updatedb.plocate
+sudo usermod -aG input "$USER"   # then log out and back in
 ```
 
-## Build from source
+## Installation
+
+### Debian package (recommended)
+
+Download the latest `.deb` from the [releases page](https://github.com/Hostermen/spotlight-linux/releases) and install it:
 
 ```bash
-# Backend (Rust)
-cargo build --release
-
-# Frontend (Electron + React)
-cd electron
-npm install
-npm run build
+sudo apt install ./spotlight-linux_<version>_amd64.deb
 ```
 
-## Install (user-level)
+The package installs the backend binary, the Electron frontend (bundled), desktop menu and autostart entries, and the start/stop scripts. After installing, log out and back in (for the `input` group), then start it:
 
 ```bash
+spotlight-start
+```
+
+Press double-Shift to summon Spotlight.
+
+### Release tarball
+
+```bash
+tar xf spotlight-linux-<version>.tar.gz
+cd spotlight-linux-<version>/
 ./scripts/install-user.sh
 ```
 
-This:
-- builds the Rust backend (`cargo build --release`)
-- builds the React/Electron frontend (`npm run build` → `electron/dist/`)
-- copies the binary to `~/.local/bin/spotlight-files`
-- installs `spotlight-start` / `spotlight-stop` launcher scripts (the start script's electron path is patched in at install time, so it works from any project location)
-- adds a GNOME application menu entry ("Spotlight Files")
-- adds an autostart entry (launches on login)
-
-After installing:
-1. If you just added yourself to the `input` group, **log out and back in**.
-2. Start it: `~/.local/bin/spotlight-start`
-3. Press **double-Shift** to summon Spotlight.
-
-Uninstall:
+### Build from source
 
 ```bash
-./scripts/uninstall-user.sh
+git clone https://github.com/Hostermen/spotlight-linux.git
+cd spotlight-linux
+
+# Backend
+cargo build --release
+
+# Frontend
+cd electron && npm install && npm run build
+
+# Install (user-level)
+cd .. && ./scripts/install-user.sh
 ```
 
-## Usage / keyboard shortcuts
+## Usage
 
 | Key | Action |
 |-----|--------|
 | Shift, Shift | Summon / dismiss Spotlight |
-| Super+Space | Fallback hotkey (registered by the Electron app) |
+| Super+Space | Fallback hotkey |
 | Type | Filter apps, files, or calculate |
 | Arrow Down / Tab | Move down in results |
 | Arrow Up | Move up (back to the search field from the first result) |
 | Enter | Open the selected result (or copy a calculator result) |
 | Esc | Dismiss Spotlight |
-| Ctrl+Q | Quit the Electron background process |
 
-Start / stop manually:
+Start and stop the launcher manually:
 
 ```bash
-~/.local/bin/spotlight-start   # launches Electron UI + Rust daemon (as systemd user units)
-~/.local/bin/spotlight-stop    # stops both
+spotlight-start    # launches the Electron UI + Rust daemon
+spotlight-stop     # stops both
 ```
 
-Logs:
+Logs are available via systemd user units:
 
 ```bash
 journalctl --user -u spotlight-electron -f   # Electron UI
-journalctl --user -u spotlight-daemon -f     # Rust hotkey daemon
+journalctl --user -u spotlight-daemon -f      # Rust hotkey daemon
 ```
 
-## How the hotkey works
+Uninstall:
 
-The Rust daemon reads keyboard events directly from `/dev/input/event*` via the Linux `evdev` interface. This is kernel-level, so it works on both Wayland and X11 regardless of which app has focus. It listens for two Shift presses (left or right) within 280 ms. Auto-repeat events (holding Shift) are ignored, so normal typing is unaffected. When it detects a double-Shift, it writes `toggle` to `/tmp/spotlight-files.sock`, and the Electron app shows/hides the window.
+```bash
+# Debian package
+sudo apt remove spotlight-linux
 
-This requires membership in the `input` group. If you prefer not to use evdev, set `SPOTLIGHT_USE_EVDEV=0` and bind a GNOME custom shortcut to `spotlight-files` instead.
+# User-level install
+./scripts/uninstall-user.sh
+```
 
-## How window centering works
+## How it works
 
-The Electron app positions its window via `setBounds()` to the horizontal center and ~12% above the vertical center of the primary display, matching macOS Spotlight placement. On X11 this works directly. On GNOME/Wayland, application-requested window positions are honored for override-redirect/transparent windows like this one.
+The Rust daemon reads keyboard events directly from `/dev/input/event*` via the Linux `evdev` interface, so the hotkey works regardless of which application has focus. It detects two Shift presses within 280 ms (auto-repeat ignored) and writes `toggle` to `/tmp/spotlight-files.sock`, causing the Electron app to show or hide its window.
 
-## How file search stays light
-
-`plocate` stores a compressed `mlocate`-style index (built once daily by `updatedb.plocate`, usually via a system cron/timer). A query is a single read-only scan of that index — no filesystem walk, no running daemon, no per-keystroke I/O. The backend spawns `plocate` only after a 150 ms typing debounce and caps results at 100, so typing never hammers the CPU.
+When the user types, the Electron renderer sends the query to the backend over IPC. The backend spawns `spotlight-files --search <query>`, which loads `.desktop` entries, runs `plocate` (for queries of two or more characters), evaluates the input as math when applicable, and returns a single JSON document. The renderer displays the results and, on Enter, asks the main process to launch the app with `gtk-launch`, open the file with `xdg-open`, or copy a calculator result to the clipboard.
 
 ## Verification
 
 ```bash
-cargo test --release        # 18 tests (calculator, fuzzy match, plocate, app parsing, double-tap logic)
+cargo test --release                       # 18 tests
 cargo clippy --release -- -D warnings
 cd electron && npm run build
 ```
-
-## Release package
-
-A self-contained release tarball can be built with:
-
-```bash
-./scripts/package.sh
-# → dist/spotlight-linux-<version>.tar.gz
-```
-
-It bundles the prebuilt Rust backend, the built Electron frontend, the GNOME extension, and the install/uninstall scripts. To install from a release tarball:
-
-```bash
-tar xf spotlight-linux-*.tar.gz
-cd spotlight-linux-*/
-./scripts/install-user.sh
-```
-
-Prebuilt releases are published on the [GitHub Releases page](https://github.com/Hostermen/spotlight-linux/releases).
 
 ## Project structure
 
 ```
 .
-├── Cargo.toml                 # Rust backend manifest
-├── Cargo.lock
-├── src/                       # Rust backend source
-│   ├── main.rs                # Entry: daemon mode, --search JSON mode, --gtk fallback
-│   ├── search.rs              # Builds + serializes search results (apps + files + calc)
-│   ├── app_search.rs          # Parses .desktop entries into app list
-│   ├── file_search.rs         # plocate wrapper for file search
-│   ├── calculator.rs          # Recursive-descent math evaluator
-│   ├── keywatch.rs            # evdev double-Shift detector
-│   └── model.rs              # Shared data types
-├── electron/                  # Electron + React frontend
+├── Cargo.toml                      # Rust backend manifest
+├── src/                            # Rust backend
+│   ├── main.rs                     # Entry: daemon mode + --search JSON mode
+│   ├── search.rs                   # Aggregates and serializes search results
+│   ├── app_search.rs               # Parses .desktop entries
+│   ├── file_search.rs              # plocate wrapper
+│   ├── calculator.rs               # Recursive-descent math evaluator
+│   ├── keywatch.rs                 # evdev double-Shift detector
+│   └── model.rs                     # Shared data types
+├── electron/                       # Electron + React frontend
+│   ├── electron/
+│   │   ├── main.cjs                # Main process: window, IPC, socket, shortcuts
+│   │   └── preload.cjs             # contextBridge API for the renderer
+│   ├── src/
+│   │   ├── main.jsx                # React entry
+│   │   ├── App.jsx                 # Spotlight UI component
+│   │   └── App.css                 # Spotlight styling
 │   ├── package.json
 │   ├── vite.config.js
-│   ├── index.html
-│   ├── electron/
-│   │   ├── main.cjs           # Main process: window, IPC, Unix socket, shortcuts
-│   │   └── preload.cjs        # contextBridge API exposed to the renderer
-│   └── src/
-│       ├── main.jsx           # React entry
-│       ├── App.jsx            # Spotlight UI component
-│       └── App.css            # Spotlight styling
+│   └── index.html
 └── scripts/
-    ├── install-user.sh        # Build + install everything (user-level)
-    ├── uninstall-user.sh      # Remove the user-level install
-    ├── start.sh               # Launch Electron UI + Rust daemon (template; patched at install)
-    ├── stop.sh                # Stop both
-    └── package.sh             # Build the release tarball
+    ├── install-user.sh             # Build + install (user-level)
+    ├── uninstall-user.sh           # Remove the user-level install
+    ├── start.sh                    # Launch Electron UI + Rust daemon
+    ├── stop.sh                     # Stop both
+    ├── package.sh                  # Build the release tarball
+    └── package-deb.sh              # Build the .deb package
 ```
-
-## Limitations
-
-- File search sees only paths present when `updatedb.plocate` last ran (usually <24 h old). Run `sudo updatedb.plocate` for a fresh index.
-- Results are filename-based (not full-text contents), matching the "Everything" model on Windows.
-- The Rust hotkey daemon checks ATR-like keyboard presence only; it is a convenience feature, not a security boundary.
 
 ## License
 
