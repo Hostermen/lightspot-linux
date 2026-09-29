@@ -7,10 +7,11 @@ BINARY="$HOME/.local/bin/spotlight-files"
 ELECTRON="$ELECTRON_DIR/node_modules/electron/dist/electron"
 SOCKET="/tmp/spotlight-files.sock"
 
-# Kill existing instances
-systemctl --user stop spotlight-electron spotlight-daemon 2>/dev/null
-pgrep -x spotlight-files | xargs -r kill 2>/dev/null
-pgrep -x electron | xargs -r kill 2>/dev/null
+# Kill existing instances (ignore failures — units may not exist yet)
+systemctl --user stop spotlight-electron spotlight-daemon 2>/dev/null || true
+systemctl --user reset-failed spotlight-electron spotlight-daemon 2>/dev/null || true
+pgrep -x spotlight-files | xargs -r kill 2>/dev/null || true
+pgrep -x electron | xargs -r kill 2>/dev/null || true
 sleep 0.3
 
 # Clean stale socket

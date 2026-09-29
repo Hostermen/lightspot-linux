@@ -89,7 +89,7 @@ function App() {
   useEffect(() => {
     const el = document.querySelector('.spotlight');
     if (el) {
-      const h = Math.min(el.scrollHeight, 500);
+      const h = Math.ceil(el.getBoundingClientRect().height);
       window.electronAPI?.resize(h);
     }
   }, [results]);
