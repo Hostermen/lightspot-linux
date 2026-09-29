@@ -23,6 +23,15 @@ pub struct FileHit {
     pub path: String,
 }
 
+/// A full-text content match returned by the Tantivy content index.
+#[derive(Clone, Debug)]
+pub struct ContentHit {
+    /// Absolute path of the file whose contents matched.
+    pub path: String,
+    /// A short snippet of the matching text (single-line, length-capped).
+    pub snippet: String,
+}
+
 /// What should happen when the user activates a result row.
 /// Carried alongside display data so the UI/frontend knows how to act.
 #[derive(Clone)]

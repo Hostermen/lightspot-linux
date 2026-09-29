@@ -10,6 +10,7 @@
 
 mod app_search;
 mod calculator;
+mod content_index;
 mod file_search;
 mod keywatch;
 mod model;
@@ -46,6 +47,9 @@ fn run_daemon() {
              Install it:  sudo apt install plocate && sudo updatedb.plocate"
         );
     }
+    // Start the background content indexer (initial full build + watcher).
+    // Runs in its own thread so it never blocks the hotkey listener.
+    content_index::spawn_indexer();
     // Channel: the keywatch thread sends `()` on every double-Shift; the
     // main loop receives it and triggers the Electron app over the socket.
     let (tx, rx) = mpsc::channel::<()>();
@@ -71,6 +75,12 @@ fn main() {
                 run_search_cli(&query);
                 return;
             }
+            // Rebuild the full-text content index and exit.
+            "--index" => {
+                let n = content_index::build_index();
+                println!("indexed {n} documents");
+                return;
+            }
             // Help text.
             "--help" | "-h" => {
                 println!("spotlight-files — Spotlight-style launcher for Linux");
@@ -78,6 +88,7 @@ fn main() {
                 println!("USAGE:");
                 println!("  spotlight-files              Run as daemon (double-Shift hotkey → Electron UI)");
                 println!("  spotlight-files --search Q   Output JSON search results for query Q and exit");
+                println!("  spotlight-files --index      (Re)build the full-text content index and exit");
                 println!("  spotlight-files --help       Show this help");
                 return;
             }

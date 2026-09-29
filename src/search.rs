@@ -7,8 +7,9 @@
 
 use crate::app_search;
 use crate::calculator;
+use crate::content_index;
 use crate::file_search;
-use crate::model::{Action, AppEntry, DisplayItem, FileHit};
+use crate::model::{Action, AppEntry, ContentHit, DisplayItem, FileHit};
 use std::path::Path;
 
 /// Combine apps + file hits for a query into one display list.
@@ -17,9 +18,15 @@ use std::path::Path;
 ///   1. Calculator result (if the query looks like math)
 ///   2. Fuzzy-matched applications (best score first, then alphabetical)
 ///   3. plocate file hits
+///   4. Full-text content matches (with snippet)
 ///
 /// The final list is capped at 30 rows for a snappy UI.
-pub fn build_results(query: &str, apps: &[AppEntry], files: &[FileHit]) -> Vec<DisplayItem> {
+pub fn build_results(
+    query: &str,
+    apps: &[AppEntry],
+    files: &[FileHit],
+    content: &[ContentHit],
+) -> Vec<DisplayItem> {
     let q = query.trim();
     if q.is_empty() {
         return Vec::new();             // nothing to show for empty input
@@ -50,7 +57,7 @@ pub fn build_results(query: &str, apps: &[AppEntry], files: &[FileHit]) -> Vec<D
         .collect();
     // Higher score first; ties broken alphabetically by app name.
     app_matches.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1.name.cmp(&b.1.name)));
-    // Show at most 8 apps to leave room for file results.
+    // Show at most 8 apps to leave room for file + content results.
     for (_, a) in app_matches.iter().take(8) {
         items.push(DisplayItem {
             // Fall back to a generic icon if the .desktop had no Icon=.
@@ -67,7 +74,7 @@ pub fn build_results(query: &str, apps: &[AppEntry], files: &[FileHit]) -> Vec<D
     // ── Files ────────────────────────────────────────────────────
     // Each file hit becomes one row: the base name as the title, the parent
     // directory as the subtitle, and `xdg-open <path>` as the action.
-    for f in files.iter().take(20) {
+    for f in files.iter().take(8) {
         let name = Path::new(&f.path)
             .file_name()                                  // last path component
             .map(|s| s.to_string_lossy().to_string())
@@ -84,21 +91,41 @@ pub fn build_results(query: &str, apps: &[AppEntry], files: &[FileHit]) -> Vec<D
         });
     }
 
+    // ── Content matches ─────────────────────────────────────────
+    // Files whose *contents* match the query (via the Tantivy index). The
+    // snippet from the matching region is shown as the subtitle so the user
+    // can see the context without opening the file.
+    for c in content.iter().take(12) {
+        let name = Path::new(&c.path)
+            .file_name()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_else(|| c.path.clone());
+        items.push(DisplayItem {
+            icon: "content-match".to_string(),
+            title: name,
+            subtitle: c.snippet.clone(),
+            action: Action::OpenFile(c.path.clone()),
+        });
+    }
+
     // Hard cap so very large result sets never bog down the UI.
     items.truncate(30);
     items
 }
 
-/// Convenience wrapper: load apps + run file search, then build results.
+/// Convenience wrapper: load apps + run file + content search, then build results.
 pub fn search(query: &str) -> Vec<DisplayItem> {
     let apps = app_search::load_apps();                 // parse .desktop files
-    // Only hit plocate for queries of >= 2 chars (matches file_search policy).
-    let file_hits = if query.trim().len() >= 2 {
-        file_search::search_files(query, 100)
+    // Only hit plocate / content index for queries of >= 2 chars.
+    let (file_hits, content_hits) = if query.trim().len() >= 2 {
+        (
+            file_search::search_files(query, 100),
+            content_index::search_content(query, 20),
+        )
     } else {
-        Vec::new()
+        (Vec::new(), Vec::new())
     };
-    build_results(query, &apps, &file_hits)
+    build_results(query, &apps, &file_hits, &content_hits)
 }
 
 /// Escape a string for safe inclusion inside a JSON string literal.

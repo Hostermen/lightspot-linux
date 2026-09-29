@@ -11,10 +11,11 @@ Spotlight Linux is built as a small, persistent Rust daemon paired with an Elect
 ## Features
 
 - **Double-Shift hotkey** — kernel-level `evdev` capture works on both Wayland and X11 without interfering with normal typing. Super+Space is registered as a fallback.
-- **Unified search** — fuzzy-matched applications (from `.desktop` entries) and instant file lookup via the `plocate` index, plus an inline calculator. Results stream in after a 150 ms debounce.
+- **Unified search** — fuzzy-matched applications (from `.desktop` entries), instant file lookup via the `plocate` index, full-text content search via a persistent [Tantivy](https://github.com/quickwit-oss/tantivy) index, plus an inline calculator. Results stream in after a 150 ms debounce.
+- **Full-text content search** — the daemon builds and maintains a Tantivy full-text index of file *contents* under your home directory and watches for changes incrementally, so you can search by what's inside a file, not just its name. Each content hit shows a snippet of the matching text.
 - **Native look** — a transparent, centered card with backdrop blur, rounded corners, and blue selection highlight, positioned ~12% above screen center to match macOS Spotlight.
 - **Keyboard-first** — type to filter, arrow keys to navigate, Enter to activate, Esc to dismiss.
-- **Lightweight backend** — the Rust binary is under 600 KB. File search reads a compressed `plocate` index in a single scan, with no background indexer or daemon of its own.
+- **Lightweight backend** — file-name search reads a compressed `plocate` index in a single scan; content search queries a persistent mmap-backed Tantivy index updated by a background watcher thread.
 
 ## Requirements
 
@@ -110,12 +111,14 @@ sudo apt remove spotlight-linux
 
 The Rust daemon reads keyboard events directly from `/dev/input/event*` via the Linux `evdev` interface, so the hotkey works regardless of which application has focus. It detects two Shift presses within 280 ms (auto-repeat ignored) and writes `toggle` to `/tmp/spotlight-files.sock`, causing the Electron app to show or hide its window.
 
-When the user types, the Electron renderer sends the query to the backend over IPC. The backend spawns `spotlight-files --search <query>`, which loads `.desktop` entries, runs `plocate` (for queries of two or more characters), evaluates the input as math when applicable, and returns a single JSON document. The renderer displays the results and, on Enter, asks the main process to launch the app with `gtk-launch`, open the file with `xdg-open`, or copy a calculator result to the clipboard.
+When the user types, the Electron renderer sends the query to the backend over IPC. The backend spawns `spotlight-files --search <query>`, which loads `.desktop` entries, runs `plocate` (for queries of two or more characters), queries the Tantivy content index, evaluates the input as math when applicable, and returns a single JSON document. The renderer displays the results and, on Enter, asks the main process to launch the app with `gtk-launch`, open the file with `xdg-open`, or copy a calculator result to the clipboard.
+
+On startup the daemon spawns a background indexer thread that performs an initial full build of the Tantivy content index (under `$XDG_CACHE_HOME/spotlight-linux/index/`, or `~/.cache/...` by default) and then uses the `notify` crate to watch for filesystem changes, debouncing events and committing incrementally. The index scope defaults to `$HOME` and can be overridden with the `SPOTLIGHT_INDEX_DIRS` environment variable (colon-separated paths). Binary files (detected via NUL-byte sniffing), files over 2 MiB, hidden files, git-ignored entries, and common build/dependency directories (`node_modules`, `target`, `dist`, `__pycache__`, …) are skipped. A manual full reindex is available with `spotlight-files --index`.
 
 ## Verification
 
 ```bash
-cargo test --release                       # 18 tests
+cargo test --release                       # 22 tests
 cargo clippy --release -- -D warnings
 cd electron && npm run build
 ```
@@ -126,13 +129,14 @@ cd electron && npm run build
 .
 ├── Cargo.toml                      # Rust backend manifest
 ├── src/                            # Rust backend
-│   ├── main.rs                     # Entry: daemon mode + --search JSON mode
+│   ├── main.rs                     # Entry: daemon mode + --search/--index modes
 │   ├── search.rs                   # Aggregates and serializes search results
 │   ├── app_search.rs               # Parses .desktop entries
 │   ├── file_search.rs              # plocate wrapper
+│   ├── content_index.rs            # Tantivy full-text index + notify watcher
 │   ├── calculator.rs               # Recursive-descent math evaluator
 │   ├── keywatch.rs                 # evdev double-Shift detector
-│   └── model.rs                     # Shared data types
+│   └── model.rs                    # Shared data types
 ├── electron/                       # Electron + React frontend
 │   ├── electron/
 │   │   ├── main.cjs                # Main process: window, IPC, socket, shortcuts

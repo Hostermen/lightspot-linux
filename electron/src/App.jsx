@@ -159,6 +159,8 @@ function App() {
                     <span className="icon-emoji">🧮</span>           // calculator result
                   ) : item.action_type === 'launch_app' ? (
                     <span className="icon-emoji">📦</span>           // application
+                  ) : item.icon === 'content-match' ? (
+                    <span className="icon-emoji">🔎</span>          // content (full-text) match
                   ) : (
                     <span className="icon-emoji">📄</span>          // file
                   )}
