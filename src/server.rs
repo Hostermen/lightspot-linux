@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Hostermen
+
 // server.rs — Search socket server for the daemon.
 //
 // The one-shot `--search` CLI pays a fixed cost on every query: process

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Hostermen
+
 // calculator.rs — A tiny recursive-descent math evaluator.
 //
 // Used by the search module: when the user's query "looks like math", we

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Hostermen
+
 // preload.cjs — Secure bridge between the Electron main process and the
 // React renderer.
 //

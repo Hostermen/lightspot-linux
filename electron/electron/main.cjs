@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Hostermen
+
 // main.cjs — Electron main process.
 //
 // Responsibilities:
@@ -91,7 +94,7 @@ function createWindow() {
     win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
   }
 
-  // Click-outside / focus-loss dismisses the window (macOS Spotlight behavior).
+  // Click-outside / focus-loss dismisses the window.
   // On Wayland, blur can fire spuriously right after show, so we add a small
   // grace period — ignore blur events within 500ms of showing.
   win.on('blur', () => {
@@ -113,7 +116,7 @@ function showWindow() {
   const primary = screen.getPrimaryDisplay();
   const winWidth = 680;
   const winHeight = 80;          // initial height — grows with results
-  // Horizontal center; vertically ~12% above center (macOS Spotlight placement).
+  // Horizontal center; vertically ~12% above center.
   const x = Math.round(primary.bounds.x + (primary.bounds.width - winWidth) / 2);
   const y = Math.round(primary.bounds.y + (primary.bounds.height - winHeight) / 2 - primary.bounds.height * 0.12);
   win.setBounds({ x, y, width: winWidth, height: winHeight });

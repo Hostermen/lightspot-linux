@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Hostermen
+
 // search.rs — Aggregate and serialize search results.
 //
 // This module ties together the three result sources (calculator, app

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Hostermen
+
 // file_search.rs — File search backed by `plocate`.
 //
 // `plocate` reads a prebuilt, compressed filename index (refreshed daily by

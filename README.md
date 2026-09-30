@@ -4,7 +4,7 @@
 [![Rust](https://img.shields.io/badge/Rust-stable-orange.svg)](https://www.rust-lang.org/)
 [![Electron](https://img.shields.io/badge/Electron-31-47848F.svg)](https://www.electronjs.org/)
 
-A Spotlight-style launcher for Linux. Search applications and files, evaluate math expressions, and launch results instantly — summoned with a double-Shift, just like macOS.
+A Spotlight-style launcher for Linux. Search applications and files, evaluate math expressions, and launch results instantly — summoned with a double-Shift.
 
 Spotlight Linux is built as a small, persistent Rust daemon paired with an Electron + React frontend. The daemon captures the hotkey at the kernel level via `evdev` and serves search results over a Unix socket; the Electron app renders the frosted-glass UI and forwards activations to `gtk-launch` / `xdg-open`.
 
@@ -13,7 +13,7 @@ Spotlight Linux is built as a small, persistent Rust daemon paired with an Elect
 - **Double-Shift hotkey** — kernel-level `evdev` capture works on both Wayland and X11 without interfering with normal typing. Super+Space is registered as a fallback.
 - **Unified search** — fuzzy-matched applications (from `.desktop` entries), instant file lookup via the `plocate` index, full-text content search via a persistent [Tantivy](https://github.com/quickwit-oss/tantivy) index, plus an inline calculator. Results stream in after an 80 ms debounce.
 - **Full-text content search** — the daemon builds and maintains a Tantivy full-text index of file *contents* under your home directory and watches for changes incrementally, so you can search by what's inside a file, not just its name. Each content hit shows a snippet of the matching text.
-- **Native look** — a transparent, centered card with backdrop blur, rounded corners, and blue selection highlight, positioned ~12% above screen center to match macOS Spotlight.
+- **Native look** — a transparent, centered card with backdrop blur, rounded corners, and blue selection highlight, positioned ~12% above screen center.
 - **Keyboard-first** — type to filter, arrow keys to navigate, Enter to activate, Esc to dismiss.
 - **Lightweight backend** — file-name search reads a compressed `plocate` index in a single scan; content search queries a persistent mmap-backed Tantivy index updated by a background watcher thread.
 

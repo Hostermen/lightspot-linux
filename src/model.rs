@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Hostermen
+
 // model.rs — Shared data types used across the search backend.
 //
 // These structs are the "vocabulary" passed between the app-search,

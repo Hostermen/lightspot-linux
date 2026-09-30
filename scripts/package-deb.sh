@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Hostermen
+
 # package-deb.sh — Build a self-contained .deb package for spotlight-linux.
 #
 # The package bundles:
@@ -158,7 +162,7 @@ Recommends:
 Maintainer: Hostermen <lukas.kuemmerle@gmail.com>
 Description: Spotlight-style launcher for Linux
  Spotlight Linux provides instant application and file search, an inline
- calculator, and a double-Shift hotkey to summon a macOS-style translucent
+  calculator, and a double-Shift hotkey to summon a translucent
  launcher window. Built with a Rust backend (evdev hotkey + plocate search)
  and an Electron + React frontend.
  .

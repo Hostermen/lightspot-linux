@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Hostermen
+
 # package.sh — Build a self-contained release tarball for spotlight-files.
 #
 # The tarball bundles:

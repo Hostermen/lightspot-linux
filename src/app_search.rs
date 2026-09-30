@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Hostermen
+
 // app_search.rs — Discover launchable applications from `.desktop` files.
 //
 // The freedesktop.org spec says application launchers live as `*.desktop`

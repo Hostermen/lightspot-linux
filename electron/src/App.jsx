@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Hostermen
+
 // App.jsx — The Spotlight UI component (renderer side).
 //
 // A single React component that renders the search bar and results list,

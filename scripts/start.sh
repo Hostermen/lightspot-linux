@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Hostermen
+
 # start.sh — Launch the Spotlight Files Electron UI + Rust daemon.
 #
 # This file is a TEMPLATE: the `__ELECTRON_DIR__` placeholder is replaced

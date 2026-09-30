@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Hostermen
+
 # install-user.sh — Build and install spotlight-files (Electron UI + Rust backend).
 #
 # Installs everything to user-level directories (no sudo needed beyond the

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Hostermen
+
 // main.jsx — React entry point.
 //
 // Mounts the <App/> component into the #root div in index.html. Wrapped in

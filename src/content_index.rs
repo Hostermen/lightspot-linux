@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Hostermen
+
 // content_index.rs — Full-text content index (Tantivy) + file watcher.
 //
 // This module builds and maintains a persistent full-text index of file

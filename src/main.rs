@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Hostermen
+
 // main.rs — Entry point for the `spotlight-files` Rust backend.
 //
 // The backend has two runtime modes:

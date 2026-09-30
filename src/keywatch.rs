@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Hostermen
+
 // keywatch.rs — Double-Shift hotkey detector via the Linux evdev interface.
 //
 // The daemon mode of the backend uses this module to listen for keyboard
