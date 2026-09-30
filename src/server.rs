@@ -43,10 +43,7 @@ pub fn spawn_search_server() {
             }
         };
         // Restrict to the owner, matching the toggle socket's permissions.
-        let _ = std::fs::set_permissions(
-            SEARCH_SOCKET,
-            std::fs::Permissions::from_mode(0o600),
-        );
+        let _ = std::fs::set_permissions(SEARCH_SOCKET, std::fs::Permissions::from_mode(0o600));
         eprintln!("spotlight-files: search server listening on {SEARCH_SOCKET}");
 
         // Accept loop: one connection per iteration, each on its own thread.

@@ -154,7 +154,7 @@ Priority: optional
 Architecture: ${ARCH}
 Installed-Size: ${INSTALLED_SIZE}
 Depends: plocate
-Recommends: 
+Recommends:
 Maintainer: Hostermen <hostermen@users.noreply.github.com>
 Description: Spotlight-style launcher for Linux
  Spotlight Linux provides instant application and file search, an inline

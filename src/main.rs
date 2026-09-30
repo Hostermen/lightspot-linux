@@ -93,11 +93,13 @@ fn main() {
                 println!("USAGE:");
                 println!("  spotlight-files              Run as daemon (double-Shift hotkey → Electron UI)");
                 println!("  spotlight-files --search Q   Output JSON search results for query Q and exit");
-                println!("  spotlight-files --index      (Re)build the full-text content index and exit");
+                println!(
+                    "  spotlight-files --index      (Re)build the full-text content index and exit"
+                );
                 println!("  spotlight-files --help       Show this help");
                 return;
             }
-            _ => {}   // unknown flag → fall through to daemon mode
+            _ => {} // unknown flag → fall through to daemon mode
         }
     }
 

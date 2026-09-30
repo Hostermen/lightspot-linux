@@ -8,8 +8,8 @@
 // the main loop can tell the Electron UI to toggle.
 
 use evdev::{Device, EventSummary, KeyCode};
-use std::sync::mpsc::Sender;   // channel to notify the main loop on a trigger
-use std::thread;               // each keyboard device gets its own thread
+use std::sync::mpsc::Sender; // channel to notify the main loop on a trigger
+use std::thread; // each keyboard device gets its own thread
 use std::time::{Duration, Instant};
 
 /// Maximum time between two Shift presses for them to count as a double-tap.
@@ -40,9 +40,9 @@ fn usable_keyboard_devices() -> Vec<Device> {
     evdev::enumerate()
         .filter_map(|(_, d)| {
             // `supported_keys()` is None on devices without a key event capability.
-            let has_shift = d
-                .supported_keys()
-                .is_some_and(|ks| ks.contains(KeyCode::KEY_LEFTSHIFT) || ks.contains(KeyCode::KEY_RIGHTSHIFT));
+            let has_shift = d.supported_keys().is_some_and(|ks| {
+                ks.contains(KeyCode::KEY_LEFTSHIFT) || ks.contains(KeyCode::KEY_RIGHTSHIFT)
+            });
             // Keep only keyboard-like devices.
             if has_shift {
                 Some(d)
@@ -73,7 +73,7 @@ pub fn spawn_keywatch(toggle_tx: Sender<()>) {
     );
     // One watcher thread per device so a single blocked read can't starve others.
     for d in devices {
-        let tx = toggle_tx.clone();     // clone the sender for this thread
+        let tx = toggle_tx.clone(); // clone the sender for this thread
         thread::spawn(move || watch_one(d, tx));
     }
 }
@@ -129,23 +129,23 @@ mod tests {
 
     #[test]
     fn single_press_does_not_trigger() {
-        let (p, t) = is_double_tap(None, 100, 280);   // no prior press
-        assert!(!t);                                   // not a double-tap
-        assert_eq!(p, Some(100));                      // first press remembered
+        let (p, t) = is_double_tap(None, 100, 280); // no prior press
+        assert!(!t); // not a double-tap
+        assert_eq!(p, Some(100)); // first press remembered
     }
 
     #[test]
     fn double_press_within_window_triggers() {
         let (p, t) = is_double_tap(Some(100), 200, 280); // 100ms gap
-        assert!(t);                                      // triggers
-        assert_eq!(p, None);                              // state reset after firing
+        assert!(t); // triggers
+        assert_eq!(p, None); // state reset after firing
     }
 
     #[test]
     fn double_press_outside_window_does_not_trigger() {
         let (p, t) = is_double_tap(Some(100), 500, 280); // 400ms gap, > 280
-        assert!(!t);                                       // too late
-        assert_eq!(p, Some(500));                         // restart the window
+        assert!(!t); // too late
+        assert_eq!(p, Some(500)); // restart the window
     }
 
     #[test]

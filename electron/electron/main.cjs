@@ -12,7 +12,7 @@
 // Uses CommonJS (.cjs) because Electron's main entry works best with CJS,
 // while Vite bundles the renderer as ESM.
 
-const { app, BrowserWindow, ipcMain, screen, shell, clipboard, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, clipboard, globalShortcut } = require('electron');
 const path = require('path');
 const { execFile, exec, spawn } = require('child_process');
 const net = require('net');
@@ -57,7 +57,6 @@ let showTime = 0;  // timestamp of last show() — used to ignore spurious blur 
 
 // Build the transparent, frameless window. Hidden until toggled.
 function createWindow() {
-  const primary = screen.getPrimaryDisplay();
   const winWidth = 680;          // fixed width, matches the CSS .spotlight width
   const winMaxHeight = 500;      // cap so a long results list can't overflow
 
@@ -292,11 +291,11 @@ ipcMain.handle('search', async (_event, query) => {
     if (out && out.trim()) {
       return JSON.parse(out);
     }
-  } catch (_) {
+  } catch {
     // Socket unavailable — fall through to the subprocess fallback.
   }
   return new Promise((resolve, reject) => {
-    execFile(BINARY_PATH, ['--search', query], (err, stdout, stderr) => {
+    execFile(BINARY_PATH, ['--search', query], (err, stdout) => {
       if (err) {
         reject(err);                 // binary missing or crashed
         return;
@@ -342,7 +341,7 @@ ipcMain.handle('resize', (_event, height) => {
 
 function setupSocket() {
   // Remove a stale socket file from a previous crash.
-  try { fs.unlinkSync(SOCKET_PATH); } catch (e) {}
+  try { fs.unlinkSync(SOCKET_PATH); } catch { /* stale socket */ }
   // One connection at a time; the daemon opens, writes a command, and closes.
   const server = net.createServer((conn) => {
     let data = '';
@@ -387,7 +386,7 @@ app.on('window-all-closed', (e) => {
 app.on('before-quit', () => {
   try {
     if (socketServer) socketServer.close();
-    try { fs.unlinkSync(SOCKET_PATH); } catch (e) {}
+    try { fs.unlinkSync(SOCKET_PATH); } catch { /* stale socket */ }
     globalShortcut.unregisterAll();
-  } catch (e) {}
+  } catch { /* best-effort cleanup */ }
 });

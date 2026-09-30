@@ -12,7 +12,7 @@
 pub fn looks_like_math(s: &str) -> bool {
     let t = s.trim();
     if t.is_empty() {
-        return false;                 // nothing to evaluate
+        return false; // nothing to evaluate
     }
     // Must contain at least one digit.
     let has_digit = t.chars().any(|c| c.is_ascii_digit());
@@ -29,11 +29,11 @@ pub fn looks_like_math(s: &str) -> bool {
 /// error or if the result is not finite (NaN/Infinity).
 pub fn eval(s: &str) -> Option<f64> {
     let mut p = Parser {
-        chars: s.chars().collect(),   // materialize for easy indexing
-        pos: 0,                       // current parse cursor
+        chars: s.chars().collect(), // materialize for easy indexing
+        pos: 0,                     // current parse cursor
     };
     p.skip_ws();
-    let r = p.parse_expr().ok()?;     // top-level expression
+    let r = p.parse_expr().ok()?; // top-level expression
     p.skip_ws();
     // Reject trailing garbage after a valid expression.
     if p.pos != p.chars.len() {
@@ -88,14 +88,14 @@ impl Parser {
             self.skip_ws();
             match self.peek() {
                 Some('+') => {
-                    self.pos += 1;                 // consume operator
+                    self.pos += 1; // consume operator
                     v += self.parse_term()?;
                 }
                 Some('-') => {
                     self.pos += 1;
                     v -= self.parse_term()?;
                 }
-                _ => break,                        // no more +/-
+                _ => break, // no more +/-
             }
         }
         Ok(v)
@@ -116,7 +116,7 @@ impl Parser {
                     self.pos += 1;
                     let r = self.parse_factor()?;
                     if r == 0.0 {
-                        return Err(());            // division by zero
+                        return Err(()); // division by zero
                     }
                     v /= r;
                 }
@@ -124,11 +124,11 @@ impl Parser {
                     self.pos += 1;
                     let r = self.parse_factor()?;
                     if r == 0.0 {
-                        return Err(());            // modulo by zero
+                        return Err(()); // modulo by zero
                     }
                     v %= r;
                 }
-                _ => break,                        // no more */%
+                _ => break, // no more */%
             }
         }
         Ok(v)
@@ -151,19 +151,19 @@ impl Parser {
             }
             // Parenthesized sub-expression: recurse back to the top level.
             Some('(') => {
-                self.pos += 1;                    // consume '('
+                self.pos += 1; // consume '('
                 let v = self.parse_expr()?;
                 self.skip_ws();
                 if self.peek() == Some(')') {
-                    self.pos += 1;                // consume ')'
+                    self.pos += 1; // consume ')'
                     v
                 } else {
-                    return Err(());              // missing closing paren
+                    return Err(()); // missing closing paren
                 }
             }
             // A number literal starts with a digit or a dot.
             Some(c) if c.is_ascii_digit() || c == '.' => self.parse_number()?,
-            _ => return Err(()),                  // unexpected token
+            _ => return Err(()), // unexpected token
         };
         self.skip_ws();
         // Optional exponent: a^b — recurses into parse_factor so a^b^c is right-assoc.
@@ -185,14 +185,14 @@ impl Parser {
             if c.is_ascii_digit() {
                 self.pos += 1;
             } else if c == '.' && !seen_dot {
-                seen_dot = true;                   // allow exactly one '.'
+                seen_dot = true; // allow exactly one '.'
                 self.pos += 1;
             } else {
-                break;                             // end of number
+                break; // end of number
             }
         }
         let s: String = self.chars[start..self.pos].iter().collect();
-        s.parse::<f64>().map_err(|_| ())           // e.g. "." alone fails to parse
+        s.parse::<f64>().map_err(|_| ()) // e.g. "." alone fails to parse
     }
 }
 
@@ -212,9 +212,9 @@ mod tests {
 
     #[test]
     fn precedence_and_parens() {
-        assert_eq!(eval("2+3*4").unwrap(), 14.0);     // * before +
-        assert_eq!(eval("(2+3)*4").unwrap(), 20.0);   // parens override
-        assert_eq!(eval("-(3+2)").unwrap(), -5.0);    // unary minus
+        assert_eq!(eval("2+3*4").unwrap(), 14.0); // * before +
+        assert_eq!(eval("(2+3)*4").unwrap(), 20.0); // parens override
+        assert_eq!(eval("-(3+2)").unwrap(), -5.0); // unary minus
         assert_eq!(eval("2*(1+2)^2").unwrap(), 18.0); // ^ before *
     }
 
@@ -225,24 +225,24 @@ mod tests {
 
     #[test]
     fn rejects_garbage() {
-        assert!(eval("2++").is_none());               // dangling operator
-        assert!(eval("firefox").is_none());           // not a number
-        assert!(eval("2+2 ").is_none() == false);     // trailing ws handled
-        assert!(eval("").is_none());                   // empty input
+        assert!(eval("2++").is_none()); // dangling operator
+        assert!(eval("firefox").is_none()); // not a number
+        assert!(eval("2+2 ").is_none() == false); // trailing ws handled
+        assert!(eval("").is_none()); // empty input
     }
 
     #[test]
     fn detection() {
-        assert!(looks_like_math("2+2"));               // math
-        assert!(!looks_like_math("firefox"));          // no digit/op
-        assert!(!looks_like_math("42"));               // digit but no op
-        assert!(looks_like_math("(1+2)*3"));           // full expression
+        assert!(looks_like_math("2+2")); // math
+        assert!(!looks_like_math("firefox")); // no digit/op
+        assert!(!looks_like_math("42")); // digit but no op
+        assert!(looks_like_math("(1+2)*3")); // full expression
     }
 
     #[test]
     fn formatting() {
-        assert_eq!(format_result(4.0), "4");           // integer → no dot
-        assert_eq!(format_result(2.5), "2.5");         // float → as-is
-        assert_eq!(format_result(-3.0), "-3");         // negative integer
+        assert_eq!(format_result(4.0), "4"); // integer → no dot
+        assert_eq!(format_result(2.5), "2.5"); // float → as-is
+        assert_eq!(format_result(-3.0), "-3"); // negative integer
     }
 }

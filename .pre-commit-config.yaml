@@ -1,0 +1,91 @@
+# =============================================================================
+# Pre-commit hook configuration for spotlight-linux
+# =============================================================================
+# Rust + Electron/React project. Hooks chosen for the actual stack:
+#
+#    #   Tool                           License        Notes
+#   ---  ------------------------------ -------------  ------------------------------------
+#   1   pre-commit/pre-commit-hooks    MIT            trailing-ws, eof, json/yaml checks
+#   2   codespell-project/codespell    GPL-2.0+       English misspelling check
+#   3   gitleaks/gitleaks              MIT            git-history secret scan
+#   4   Yelp/detect-secrets            Apache-2.0     secrets baseline scan (source tree)
+#   5   local (cargo fmt)              MIT/Apache-2.  Rust formatting check
+#   6   local (cargo clippy)           MIT/Apache-2.  Rust linter
+#   7   local (eslint)                 MIT            JS/JSX lint (electron)
+#
+# Prerequisites:
+#   Python 3.x (detect-secrets, codespell) | Go/binary (gitleaks)
+#   Rust toolchain (cargo) | Node/npm (eslint)
+#   First run:  pre-commit install && pre-commit install --hook-type commit-msg
+# =============================================================================
+
+repos:
+  # 1. Generic cleanup and config-file checks — MIT
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^electron/dist/|\.min\.js$
+      - id: end-of-file-fixer
+        exclude: ^electron/dist/|\.min\.js$
+      - id: check-yaml
+      - id: check-json
+        exclude: ^electron/package-lock\.json$
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+
+  # 2. Spelling: English misspellings — GPL-2.0-or-later
+  #    Allow-lists technical terms/file extensions in .codespell-ignore
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        args: ["--ignore-words=.codespell-ignore", "--skip=*.lock,target/*,node_modules/*,dist/*,.git/*,package-lock.json"]
+
+  # 3. Security: scan for hardcoded secrets in staged changes — MIT
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  # 4. Security: detect secrets in source tree — Apache-2.0
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ["--baseline", ".secrets.baseline.json"]
+        exclude: package\.lock$|\.secrets\.baseline\.json$|package-lock\.json$
+
+  # 5. Rust formatting check — runs `cargo fmt --check` (local hook)
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt --check
+        entry: cargo fmt --check
+        language: system
+        files: ^src/.*\.rs$
+        pass_filenames: false
+        stages: [pre-commit]
+
+  # 6. Rust linter — runs `cargo clippy` (local hook)
+  - repo: local
+    hooks:
+      - id: cargo-clippy
+        name: cargo clippy
+        entry: cargo clippy -- -D warnings
+        language: system
+        files: ^src/.*\.rs$
+        pass_filenames: false
+        stages: [pre-commit]
+
+  # 7. JavaScript lint — runs eslint on the Electron frontend (local hook)
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint (electron)
+        entry: bash -c 'cd electron && npx eslint .'
+        language: system
+        files: ^electron/(src|electron)/.*\.(js|jsx|cjs)$
+        pass_filenames: false
+        stages: [pre-commit]

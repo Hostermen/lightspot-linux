@@ -1,0 +1,17 @@
+# .codespell-ignore — words codespell flags but we use intentionally.
+#
+# One word per line. Codespell matches these against its misspelling
+# dictionary, so each entry suppresses the suggested "correction".
+#
+# File-type extensions that collide with English words:
+als
+caf
+edn
+sav
+# Package-lock JSON noise:
+Nd
+# Rust keyword (codespell thinks it's "create"):
+crate
+# Valid English variant; we use "unparseable" (cannot be parsed) over
+# codespell's preferred "unparsable":
+unparseable

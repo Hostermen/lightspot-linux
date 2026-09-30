@@ -10,7 +10,7 @@
 //   → startTransition(setResults) → render rows (interruptible)
 //   → user navigates with arrows → Enter → electronAPI.activate(...)
 
-import React, { useState, useEffect, useRef, useCallback, useDeferredValue, startTransition } from 'react';
+import { useState, useEffect, useRef, useCallback, useDeferredValue, startTransition } from 'react';
 import './App.css';
 
 function App() {

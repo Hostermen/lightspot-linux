@@ -13,10 +13,10 @@ use std::process::Command;
 /// The UI uses this to warn the user when file search is unavailable.
 pub fn plocate_available() -> bool {
     Command::new("plocate")
-        .arg("--version")                         // cheapest invocation that exists
-        .stdout(std::process::Stdio::null())      // discard output
-        .stderr(std::process::Stdio::null())      // and errors
-        .status()                                 // returns Ok only if it launched
+        .arg("--version") // cheapest invocation that exists
+        .stdout(std::process::Stdio::null()) // discard output
+        .stderr(std::process::Stdio::null()) // and errors
+        .status() // returns Ok only if it launched
         .is_ok()
 }
 
@@ -63,9 +63,13 @@ mod tests {
     fn finds_a_real_file() {
         // plocate index was built in this environment; /etc/passwd always exists.
         let hits = search_files("passwd", 50);
-        assert!(plocate_available(), "plocate must be installed for this test");
         assert!(
-            hits.iter().any(|h| h.path.ends_with("passwd") || h.path.contains("passwd")),
+            plocate_available(),
+            "plocate must be installed for this test"
+        );
+        assert!(
+            hits.iter()
+                .any(|h| h.path.ends_with("passwd") || h.path.contains("passwd")),
             "expected to find a path containing 'passwd', got: {:?}",
             hits.iter().map(|h| &h.path).collect::<Vec<_>>()
         );

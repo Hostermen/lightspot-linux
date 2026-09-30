@@ -8,7 +8,7 @@
 // that the search module then fuzzy-matches against the user's query.
 
 use crate::model::AppEntry;
-use std::collections::HashSet;   // deduplicates by .desktop file id
+use std::collections::HashSet; // deduplicates by .desktop file id
 use std::fs;
 use std::path::Path;
 use std::sync::Mutex;
@@ -19,9 +19,11 @@ use std::time::{Duration, Instant};
 pub fn load_apps() -> Vec<AppEntry> {
     let mut seen = HashSet::new(); // tracks .desktop ids we've already added
     let mut apps = Vec::new();
-    for dir in app_dirs() {         // iterate every application directory
+    for dir in app_dirs() {
+        // iterate every application directory
         if let Ok(entries) = fs::read_dir(&dir) {
-            for e in entries.flatten() {                  // skip unreadable entries
+            for e in entries.flatten() {
+                // skip unreadable entries
                 let p = e.path();
                 // Only consider files ending in `.desktop`.
                 if p.extension().map(|s| s == "desktop").unwrap_or(false) {
@@ -111,11 +113,11 @@ struct Parsed {
 /// not an Application, or has no `Exec=` line.
 fn parse_desktop(p: &Path) -> Option<Parsed> {
     let content = fs::read_to_string(p).ok()?;
-    let mut in_entry = false;   // true while inside the [Desktop Entry] group
+    let mut in_entry = false; // true while inside the [Desktop Entry] group
     let mut name: Option<String> = None;
-    let mut has_exec = false;   // an Application must have an Exec=
+    let mut has_exec = false; // an Application must have an Exec=
     let mut icon: Option<String> = None;
-    let mut nodisplay = false;  // NoDisplay=true → hide from menus/launchers
+    let mut nodisplay = false; // NoDisplay=true → hide from menus/launchers
     let mut typ: Option<String> = None;
     for line in content.lines() {
         // A line starting with '[' begins a new group header.
@@ -125,10 +127,10 @@ fn parse_desktop(p: &Path) -> Option<Parsed> {
             continue;
         }
         if !in_entry {
-            continue;          // ignore keys outside the main group
+            continue; // ignore keys outside the main group
         }
         if line.starts_with('#') || line.is_empty() {
-            continue;          // comments and blank lines
+            continue; // comments and blank lines
         }
         if let Some(eq) = line.find('=') {
             let key = line[..eq].trim();
@@ -140,11 +142,11 @@ fn parse_desktop(p: &Path) -> Option<Parsed> {
                         name = Some(val.to_string());
                     }
                 }
-                "Exec" => has_exec = true,            // presence is enough
+                "Exec" => has_exec = true, // presence is enough
                 "Icon" => icon = Some(val.to_string()), // store raw icon name
                 "NoDisplay" => nodisplay = val.eq_ignore_ascii_case("true"),
                 "Type" => typ = Some(val.to_string()),
-                _ => {}                                // ignore unknown keys
+                _ => {} // ignore unknown keys
             }
         }
     }
@@ -158,7 +160,7 @@ fn parse_desktop(p: &Path) -> Option<Parsed> {
     if !has_exec {
         return None;
     }
-    let name = name?;          // an app without a Name is unusable
+    let name = name?; // an app without a Name is unusable
     Some(Parsed { name, icon })
 }
 
@@ -169,7 +171,10 @@ mod tests {
     #[test]
     fn loads_apps_on_this_system() {
         let apps = load_apps();
-        assert!(!apps.is_empty(), "expected to find at least one application");
+        assert!(
+            !apps.is_empty(),
+            "expected to find at least one application"
+        );
         // No duplicate app_ids (the dedup set did its job).
         let mut ids: Vec<_> = apps.iter().map(|a| &a.app_id).collect();
         ids.sort();

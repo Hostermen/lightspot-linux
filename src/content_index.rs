@@ -21,7 +21,7 @@ use std::time::Duration;
 
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
-use tantivy::schema::{Field, Schema, STRING, TEXT, Value};
+use tantivy::schema::{Field, Schema, Value, STRING, TEXT};
 use tantivy::snippet::SnippetGenerator;
 use tantivy::{doc, Index, IndexReader, IndexWriter, ReloadPolicy, TantivyDocument, Term};
 
@@ -45,8 +45,17 @@ const FLUSH_BATCH_LIMIT: usize = 1000;
 
 /// Directory names we never descend into, even if not git-ignored.
 const DENYLIST: &[&str] = &[
-    "node_modules", "target", "dist", "build", "__pycache__",
-    ".git", ".svn", ".hg", "venv", ".venv", ".cache",
+    "node_modules",
+    "target",
+    "dist",
+    "build",
+    "__pycache__",
+    ".git",
+    ".svn",
+    ".hg",
+    "venv",
+    ".venv",
+    ".cache",
 ];
 
 /// Resolve the persistent index directory under the user's cache home.
@@ -67,7 +76,11 @@ fn index_dir() -> PathBuf {
 /// (colon-separated); defaults to `$HOME` if unset or empty.
 fn index_dirs() -> Vec<PathBuf> {
     if let Ok(s) = std::env::var("SPOTLIGHT_INDEX_DIRS") {
-        let dirs: Vec<PathBuf> = s.split(':').filter(|d| !d.is_empty()).map(PathBuf::from).collect();
+        let dirs: Vec<PathBuf> = s
+            .split(':')
+            .filter(|d| !d.is_empty())
+            .map(PathBuf::from)
+            .collect();
         if !dirs.is_empty() {
             return dirs;
         }
@@ -113,7 +126,11 @@ fn open_or_create_index() -> tantivy::Result<(Index, Field, Field)> {
 fn read_indexable(path: &Path) -> Option<String> {
     // Skip dotfiles / hidden entries (the ignore walker already hides most,
     // but events from the watcher can land on them).
-    if path.file_name().map(|n| n.to_string_lossy().starts_with('.')).unwrap_or(true) {
+    if path
+        .file_name()
+        .map(|n| n.to_string_lossy().starts_with('.'))
+        .unwrap_or(true)
+    {
         return None;
     }
     let meta = fs::metadata(path).ok()?;
@@ -138,12 +155,7 @@ fn read_indexable(path: &Path) -> Option<String> {
 /// Index (or remove) a single path. Deletes any prior doc for the same
 /// path first, then adds the new one if the file is indexable. Does NOT
 /// commit — the caller batches commits.
-fn index_one(
-    writer: &mut IndexWriter,
-    path_field: Field,
-    body_field: Field,
-    path: &Path,
-) {
+fn index_one(writer: &mut IndexWriter, path_field: Field, body_field: Field, path: &Path) {
     let p = match path.to_str() {
         Some(s) => s.to_string(),
         None => return,
@@ -225,7 +237,10 @@ pub fn build_index() -> usize {
 /// Collapse control characters to spaces and cap the snippet length so it
 /// renders cleanly on a single UI row.
 fn sanitize_snippet(s: &str) -> String {
-    let mut out: String = s.chars().map(|c| if c.is_control() { ' ' } else { c }).collect();
+    let mut out: String = s
+        .chars()
+        .map(|c| if c.is_control() { ' ' } else { c })
+        .collect();
     // Trim runs of whitespace introduced by the control→space replacement.
     while out.contains("  ") {
         out = out.replace("  ", " ");
@@ -396,19 +411,20 @@ fn flush(
 fn watch_loop() {
     // Channel: the notify callback forwards changed paths to the loop.
     let (tx, rx) = mpsc::channel::<Vec<PathBuf>>();
-    let mut watcher = match notify::recommended_watcher(move |res: notify::Result<notify::Event>| {
-        if let Ok(ev) = res {
-            // Drop errors and forward the paths of every event. `index_one`
-            // handles missing files (delete) and unindexable files (no-op).
-            let _ = tx.send(ev.paths);
-        }
-    }) {
-        Ok(w) => w,
-        Err(e) => {
-            eprintln!("spotlight-files: watcher init failed: {e}");
-            return;
-        }
-    };
+    let mut watcher =
+        match notify::recommended_watcher(move |res: notify::Result<notify::Event>| {
+            if let Ok(ev) = res {
+                // Drop errors and forward the paths of every event. `index_one`
+                // handles missing files (delete) and unindexable files (no-op).
+                let _ = tx.send(ev.paths);
+            }
+        }) {
+            Ok(w) => w,
+            Err(e) => {
+                eprintln!("spotlight-files: watcher init failed: {e}");
+                return;
+            }
+        };
 
     for dir in index_dirs() {
         if dir.is_dir() {
@@ -512,7 +528,8 @@ mod tests {
         with_temp_env(|root| {
             // Write two indexable files, one matching the query.
             let mut f1 = fs::File::create(root.join("notes.txt")).unwrap();
-            f1.write_all(b"The quick brown fox jumps over the lazy dog").unwrap();
+            f1.write_all(b"The quick brown fox jumps over the lazy dog")
+                .unwrap();
             let mut f2 = fs::File::create(root.join("other.txt")).unwrap();
             f2.write_all(b"nothing interesting here").unwrap();
 
@@ -521,7 +538,11 @@ mod tests {
 
             // Search for a phrase that only appears in notes.txt.
             let hits = search_content("quick brown", 10);
-            assert_eq!(hits.len(), 1, "expected exactly one content hit, got {hits:?}");
+            assert_eq!(
+                hits.len(),
+                1,
+                "expected exactly one content hit, got {hits:?}"
+            );
             assert!(hits[0].path.ends_with("notes.txt"));
             // The snippet should contain the matched text.
             assert!(
