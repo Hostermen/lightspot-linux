@@ -3,7 +3,12 @@ name = "spotlight-files"
 version = "0.2.0"
 edition = "2021"
 description = "Lightweight Spotlight-style launcher for Linux with app + file search"
-license = "GPL-3.0"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/Hostermen/spotlight-linux"
+readme = "README.md"
+authors = ["Hostermen"]
+keywords = ["launcher", "spotlight", "search", "desktop", "linux"]
+categories = ["command-line-utilities", "gui"]
 
 [[bin]]
 name = "spotlight-files"

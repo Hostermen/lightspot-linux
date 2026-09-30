@@ -1,17 +1,17 @@
 # Spotlight Linux
 
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Rust](https://img.shields.io/badge/Rust-stable-orange.svg)](https://www.rust-lang.org/)
 [![Electron](https://img.shields.io/badge/Electron-31-47848F.svg)](https://www.electronjs.org/)
 
 A Spotlight-style launcher for Linux. Search applications and files, evaluate math expressions, and launch results instantly — summoned with a double-Shift, just like macOS.
 
-Spotlight Linux is built as a small, persistent Rust daemon paired with an Electron + React frontend. The daemon captures the hotkey at the kernel level via `evdev` and serves search results as JSON; the Electron app renders the frosted-glass UI and forwards activations to `gtk-launch` / `xdg-open`.
+Spotlight Linux is built as a small, persistent Rust daemon paired with an Electron + React frontend. The daemon captures the hotkey at the kernel level via `evdev` and serves search results over a Unix socket; the Electron app renders the frosted-glass UI and forwards activations to `gtk-launch` / `xdg-open`.
 
 ## Features
 
 - **Double-Shift hotkey** — kernel-level `evdev` capture works on both Wayland and X11 without interfering with normal typing. Super+Space is registered as a fallback.
-- **Unified search** — fuzzy-matched applications (from `.desktop` entries), instant file lookup via the `plocate` index, full-text content search via a persistent [Tantivy](https://github.com/quickwit-oss/tantivy) index, plus an inline calculator. Results stream in after a 150 ms debounce.
+- **Unified search** — fuzzy-matched applications (from `.desktop` entries), instant file lookup via the `plocate` index, full-text content search via a persistent [Tantivy](https://github.com/quickwit-oss/tantivy) index, plus an inline calculator. Results stream in after an 80 ms debounce.
 - **Full-text content search** — the daemon builds and maintains a Tantivy full-text index of file *contents* under your home directory and watches for changes incrementally, so you can search by what's inside a file, not just its name. Each content hit shows a snippet of the matching text.
 - **Native look** — a transparent, centered card with backdrop blur, rounded corners, and blue selection highlight, positioned ~12% above screen center to match macOS Spotlight.
 - **Keyboard-first** — type to filter, arrow keys to navigate, Enter to activate, Esc to dismiss.
@@ -21,19 +21,22 @@ Spotlight Linux is built as a small, persistent Rust daemon paired with an Elect
 
 - An X11 or Wayland desktop session
 - `plocate` for file search (optional but recommended)
+- `python3` + `python3-gi` (PyGObject) + GTK 3 for icon resolution
+- `xdg-utils` (provides `xdg-open`) for opening files
+- `gtk3` (provides `gtk-launch`) for launching applications
 - Membership in the `input` group for the double-Shift hotkey (reads `/dev/input/event*`)
 
 ```bash
-sudo apt install plocate
+sudo apt install plocate python3-gi libgtk-3-0 xdg-utils
 sudo updatedb.plocate
 sudo usermod -aG input "$USER"   # then log out and back in
 ```
 
 ## Installation
 
-### Debian package (recommended)
+### Debian package
 
-Download the latest `.deb` from the [releases page](https://github.com/Hostermen/spotlight-linux/releases) and install it:
+Download the latest `.deb` from the [releases page](https://github.com/Hostermen/spotlight-linux/releases) (if available) and install it:
 
 ```bash
 sudo apt install ./spotlight-linux_<version>_amd64.deb
@@ -55,7 +58,7 @@ cd spotlight-linux-<version>/
 ./scripts/install-user.sh
 ```
 
-### Build from source
+### Build from source (recommended)
 
 ```bash
 git clone https://github.com/Hostermen/spotlight-linux.git
@@ -111,7 +114,7 @@ sudo apt remove spotlight-linux
 
 The Rust daemon reads keyboard events directly from `/dev/input/event*` via the Linux `evdev` interface, so the hotkey works regardless of which application has focus. It detects two Shift presses within 280 ms (auto-repeat ignored) and writes `toggle` to `/tmp/spotlight-files.sock`, causing the Electron app to show or hide its window.
 
-When the user types, the Electron renderer sends the query to the backend over IPC. The backend spawns `spotlight-files --search <query>`, which loads `.desktop` entries, runs `plocate` (for queries of two or more characters), queries the Tantivy content index, evaluates the input as math when applicable, and returns a single JSON document. The renderer displays the results and, on Enter, asks the main process to launch the app with `gtk-launch`, open the file with `xdg-open`, or copy a calculator result to the clipboard.
+When the user types, the Electron renderer sends the query to the daemon over a Unix socket (`/tmp/spotlight-search.sock`). The daemon queries its in-memory app list (cached with a 30 s TTL), runs `plocate` (for queries of two or more characters), queries the warm Tantivy content index, evaluates the input as math when applicable, and returns a single JSON document. This avoids spawning a new process on every keystroke, keeping the app list and index warm in memory. The renderer displays the results and, on Enter, asks the main process to launch the app with `gtk-launch`, open the file with `xdg-open`, or copy a calculator result to the clipboard.
 
 On startup the daemon spawns a background indexer thread that performs an initial full build of the Tantivy content index (under `$XDG_CACHE_HOME/spotlight-linux/index/`, or `~/.cache/...` by default) and then uses the `notify` crate to watch for filesystem changes, debouncing events and committing incrementally. The index scope defaults to `$HOME` and can be overridden with the `SPOTLIGHT_INDEX_DIRS` environment variable (colon-separated paths). Binary files (detected via NUL-byte sniffing), files over 2 MiB, hidden files, git-ignored entries, and common build/dependency directories (`node_modules`, `target`, `dist`, `__pycache__`, …) are skipped. A manual full reindex is available with `spotlight-files --index`.
 
@@ -128,9 +131,11 @@ cd electron && npm run build
 ```
 .
 ├── Cargo.toml                      # Rust backend manifest
+├── LICENSE                          # GPL-3.0
 ├── src/                            # Rust backend
 │   ├── main.rs                     # Entry: daemon mode + --search/--index modes
 │   ├── search.rs                   # Aggregates and serializes search results
+│   ├── server.rs                   # Unix-socket search server (daemon)
 │   ├── app_search.rs               # Parses .desktop entries
 │   ├── file_search.rs              # plocate wrapper
 │   ├── content_index.rs            # Tantivy full-text index + notify watcher
@@ -146,6 +151,7 @@ cd electron && npm run build
 │   │   ├── App.jsx                 # Spotlight UI component
 │   │   └── App.css                 # Spotlight styling
 │   ├── package.json
+│   ├── eslint.config.js            # Flat ESLint config
 │   ├── vite.config.js
 │   └── index.html
 └── scripts/
@@ -157,6 +163,10 @@ cd electron && npm run build
     └── package-deb.sh              # Build the .deb package
 ```
 
+## Privacy
+
+Spotlight Linux is **fully local and offline**. It makes no network requests, collects no telemetry, and sends no data anywhere. All file indexing, search, and application launching happens on your machine.
+
 ## License
 
-GPL-3.0.
+GPL-3.0-or-later. See [LICENSE](LICENSE).

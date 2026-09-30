@@ -1,7 +1,13 @@
 {
   "name": "spotlight-files",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "Spotlight-style launcher for Linux with app + file search",
+  "license": "GPL-3.0-or-later",
+  "author": "Hostermen",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hostermen/spotlight-linux.git"
+  },
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",

@@ -14,7 +14,7 @@
 
 const { app, BrowserWindow, ipcMain, screen, clipboard, globalShortcut } = require('electron');
 const path = require('path');
-const { execFile, exec, spawn } = require('child_process');
+const { execFile, spawn } = require('child_process');
 const net = require('net');
 const readline = require('readline');
 const fs = require('fs');
@@ -313,10 +313,10 @@ ipcMain.handle('search', async (_event, query) => {
 ipcMain.handle('activate', async (_event, actionType, actionData) => {
   switch (actionType) {
     case 'launch_app':
-      exec(`gtk-launch ${JSON.stringify(actionData)}`); // actionData = .desktop id
+      execFile('gtk-launch', [actionData]); // actionData = .desktop id
       break;
     case 'open_file':
-      exec(`xdg-open ${JSON.stringify(actionData)}`);    // actionData = file path
+      execFile('xdg-open', [actionData]);    // actionData = file path
       break;
     case 'copy':
       clipboard.writeText(actionData);                  // actionData = result text
