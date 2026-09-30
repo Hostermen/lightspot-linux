@@ -5,21 +5,27 @@
 // `window.electronAPI` bridge exposed by preload.cjs.
 //
 // Data flow:
-//   user types → debounce 150ms → electronAPI.search(query) → JSON results
-//   → render rows → user navigates with arrows → Enter → electronAPI.activate(...)
+//   user types → input updates URGENTLY (useDeferredValue keeps it snappy)
+//   → 80ms debounce → electronAPI.search(deferredQuery) → JSON results
+//   → startTransition(setResults) → render rows (interruptible)
+//   → user navigates with arrows → Enter → electronAPI.activate(...)
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useDeferredValue, startTransition } from 'react';
 import './App.css';
 
 function App() {
-  // Current text in the search field.
+  // Current text in the search field — updates URGENTLY on every keystroke
+  // so letters appear immediately. The search uses `deferredQuery` (below)
+  // which React updates at lower priority, keeping the input responsive.
   const [query, setQuery] = useState('');
+  // Deferred copy of `query`: React updates this when the renderer has spare
+  // time. The search effect depends on this, so searches and the resulting
+  // results/icons/resize cascade never block input painting.
+  const deferredQuery = useDeferredValue(query);
   // Array of result items returned by the backend (title, subtitle, icon, action_*).
   const [results, setResults] = useState([]);
   // Index of the currently highlighted row (-1 = none / focus in search field).
   const [selected, setSelected] = useState(-1);
-  // True while a search is in flight (could be used for a spinner).
-  const [loading, setLoading] = useState(false);
   // Direct DOM ref to the input so we can focus it programmatically.
   const inputRef = useRef(null);
   // Ref to the results container so we can scroll the selected row into view.
@@ -41,33 +47,34 @@ function App() {
     });
   }, []);
 
-  // Debounced search effect — fires whenever `query` changes.
+  // Debounced search effect — fires whenever `deferredQuery` changes (NOT
+  // `query`), so the input never blocks on search work.
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current); // cancel pending search
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     // Empty query → no results.
-    if (query.trim().length === 0) {
+    if (deferredQuery.trim().length === 0) {
       setResults([]);
       setSelected(-1);
       return;
     }
-    setLoading(true);
-    // Wait 80ms after the last keystroke before searching. With the
-    // warm-socket backend (~10ms/query) this is fast enough to feel
-    // immediate while still coalescing rapid typing.
+    // Wait 80ms after the last keystroke before searching.
     debounceRef.current = setTimeout(async () => {
       try {
-        const json = await window.electronAPI.search(query); // IPC → Rust backend
-        setResults(json.items || []);   // backend returns { items: [...] }
-        setSelected(-1);                 // no row selected yet
+        const json = await window.electronAPI.search(deferredQuery); // IPC → backend
+        // Mark results as a LOW-PRIORITY transition: if the user types
+        // again before the results list finishes rendering, React
+        // interrupts this render and prioritizes the input instead.
+        startTransition(() => {
+          setResults(json.items || []);   // backend returns { items: [...] }
+          setSelected(-1);                 // no row selected yet
+        });
       } catch (e) {
         console.error('search error', e);
-      } finally {
-        setLoading(false);
       }
     }, 80);
     // Cleanup: cancel the timer if the query changes before it fires.
     return () => clearTimeout(debounceRef.current);
-  }, [query]);
+  }, [deferredQuery]);
 
   // Activate a result item: tell the main process to launch/open/copy, then hide.
   const activate = useCallback((item) => {
@@ -123,12 +130,17 @@ function App() {
   }, [results]);
 
   // Auto-resize the Electron window to fit the rendered content.
+  // Debounced so rapid result changes (e.g. fast typing) don't trigger
+  // a window resize on every intermediate state — only the final one.
   useEffect(() => {
-    const el = document.querySelector('.spotlight');
-    if (el) {
-      const h = Math.ceil(el.getBoundingClientRect().height);
-      window.electronAPI?.resize(h);
-    }
+    const t = setTimeout(() => {
+      const el = document.querySelector('.spotlight');
+      if (el) {
+        const h = Math.ceil(el.getBoundingClientRect().height);
+        window.electronAPI?.resize(h);
+      }
+    }, 60);
+    return () => clearTimeout(t);
   }, [results]);
 
   return (
