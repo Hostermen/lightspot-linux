@@ -30,13 +30,22 @@ sleep 0.3
 rm -f "$SOCKET"
 
 # Start Electron (UI) as a detached systemd user unit.
-# GDK/CLUTTER backend=x11 avoids Wayland GPU init issues in Electron.
-export DISPLAY="${DISPLAY:-:0}"
+# Detect display session: on Wayland, let Electron use ozone-platform=wayland
+# (set in main.cjs) natively — forcing GDK_BACKEND=x11 causes XWayland connection
+# drops that crash Electron every ~30 min. On X11, set the X11 backends.
+SESSION_TYPE="${XDG_SESSION_TYPE:-x11}"
+SYSTEMD_FLAGS=()
+SYSTEMD_FLAGS+=("--setenv=DISPLAY=${DISPLAY:-:0}")
+if [ "$SESSION_TYPE" = "wayland" ]; then
+    SYSTEMD_FLAGS+=("--setenv=WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0}")
+    SYSTEMD_FLAGS+=("--setenv=XDG_SESSION_TYPE=wayland")
+else
+    SYSTEMD_FLAGS+=("--setenv=GDK_BACKEND=x11")
+    SYSTEMD_FLAGS+=("--setenv=CLUTTER_BACKEND=x11")
+fi
 systemd-run --user --unit=spotlight-electron \
     --working-directory="$ELECTRON_DIR" \
-    --setenv=DISPLAY="${DISPLAY:-:0}" \
-    --setenv=GDK_BACKEND=x11 \
-    --setenv=CLUTTER_BACKEND=x11 \
+    "${SYSTEMD_FLAGS[@]}" \
     "$ELECTRON" --no-sandbox "$ELECTRON_DIR"
 
 # Start the Rust daemon (double-Shift hotkey listener).

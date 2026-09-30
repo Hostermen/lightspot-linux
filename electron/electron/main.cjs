@@ -53,7 +53,11 @@ app.commandLine.appendSwitch('disable-gpu-sandbox');
 app.commandLine.appendSwitch('disable-vulkan');
 app.commandLine.appendSwitch('use-gl', 'angle');
 app.commandLine.appendSwitch('use-angle', 'swiftshader');
-app.commandLine.appendSwitch('ozone-platform=wayland'); // native Wayland for alpha
+// Use native Wayland when available (needed for alpha transparency),
+// but don't force it on X11 sessions.
+if (process.env.XDG_SESSION_TYPE === 'wayland' || process.env.WAYLAND_DISPLAY) {
+    app.commandLine.appendSwitch('ozone-platform=wayland');
+}
 
 let win = null;   // the single Spotlight window (created lazily)
 let showTime = 0;  // timestamp of last show() — used to ignore spurious blur on Wayland

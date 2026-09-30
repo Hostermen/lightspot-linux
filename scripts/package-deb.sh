@@ -91,14 +91,21 @@ pgrep -x electron | xargs -r kill 2>/dev/null || true
 sleep 0.3
 rm -f "$SOCKET"
 
-export DISPLAY="${DISPLAY:-:0}"
-export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+SESSION_TYPE="${XDG_SESSION_TYPE:-x11}"
+SYSTEMD_FLAGS=()
+SYSTEMD_FLAGS+=("--setenv=XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR}")
+if [ "$SESSION_TYPE" = "wayland" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
+    SYSTEMD_FLAGS+=("--setenv=WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0}")
+    SYSTEMD_FLAGS+=("--setenv=XDG_SESSION_TYPE=wayland")
+else
+    SYSTEMD_FLAGS+=("--setenv=GDK_BACKEND=x11")
+    SYSTEMD_FLAGS+=("--setenv=CLUTTER_BACKEND=x11")
+fi
+[ -n "${DISPLAY:-}" ] && SYSTEMD_FLAGS+=("--setenv=DISPLAY=${DISPLAY}")
 systemd-run --user --unit=spotlight-electron \
     --working-directory="$APP_DIR" \
-    --setenv=DISPLAY="${DISPLAY:-:0}" \
-    --setenv=WAYLAND_DISPLAY="${WAYLAND_DISPLAY}" \
-    --setenv=XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR}" \
+    "${SYSTEMD_FLAGS[@]}" \
     "$ELECTRON" --no-sandbox "$APP_DIR"
 
 systemd-run --user --unit=spotlight-daemon "$BINARY"
