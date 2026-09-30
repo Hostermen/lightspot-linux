@@ -389,9 +389,23 @@ fn watch_loop() {
 
 /// Spawn the background indexer thread. Performs an initial full build so
 /// search works immediately, then watches for incremental changes.
+///
+/// The full build is skipped when an index already exists: re-reading
+/// every file under the index dirs on every start pegs CPU and disk for
+/// tens of seconds, which starves the concurrently-starting Electron GPU
+/// process and triggers its crash (GPU error 1002). The watcher keeps an
+/// existing index current; run `spotlight-files --index` to force a
+/// full rebuild.
 pub fn spawn_indexer() {
     std::thread::spawn(|| {
-        build_index();
+        if !index_dir().join("meta.json").exists() {
+            build_index();
+        } else {
+            eprintln!(
+                "spotlight-files: index present, skipping full rebuild \
+                 (watcher tracks changes; use '--index' to force)"
+            );
+        }
         watch_loop();
     });
 }

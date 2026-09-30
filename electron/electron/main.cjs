@@ -28,11 +28,21 @@ const IS_DEV = process.argv.includes('--dev');
 
 // SwiftShader software GL: keeps the GPU process alive (needed for
 // compositing + alpha channel → transparent window) but avoids the
-// NVIDIA driver crash (error 1002). Unlike app.disableHardwareAcceleration()
+// GPU driver crash (error 1002). Unlike app.disableHardwareAcceleration()
 // which kills ALL compositing and makes the window opaque, SwiftShader
 // runs a software GL implementation so the compositor stays functional.
 // See: open-webui/desktop#178, #273
+//
+// Electron 31 enables Vulkan by default on Linux, so the GPU process
+// still loads the host Vulkan ICD (Intel ANV / NVIDIA) even with the
+// ANGLE+SwiftShader GL switches below. Under startup CPU/disk load the
+// Vulkan init races and fails with error 1002, which dumps core
+// (status=5/TRAP). `disable-vulkan` forces the SwiftShader GL path for
+// compositing too, and `disable-gpu-sandbox` makes the GPU process
+// launch reliably under the systemd user unit.
 app.commandLine.appendSwitch('no-sandbox');
+app.commandLine.appendSwitch('disable-gpu-sandbox');
+app.commandLine.appendSwitch('disable-vulkan');
 app.commandLine.appendSwitch('use-gl', 'angle');
 app.commandLine.appendSwitch('use-angle', 'swiftshader');
 app.commandLine.appendSwitch('ozone-platform=wayland'); // native Wayland for alpha
