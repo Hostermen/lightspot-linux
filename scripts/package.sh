@@ -50,10 +50,6 @@ cp -f "$SCRIPT_DIR/stop.sh"            "$STAGE/scripts/"
 # Docs.
 cp -f "$PROJECT_DIR/README.md" "$STAGE/"
 
-# Patch the staged start.sh so it points at the bundled electron/ dir.
-# (The bundled layout has the electron app at ./electron relative to the stage.)
-sed -i "s#__ELECTRON_DIR__#$(pwd)/electron#" "$STAGE/scripts/start.sh"
-
 # Patch install-user.sh to reference the bundled binary path instead of
 # rebuilding from source (release tarballs ship prebuilt binaries).
 # We rewrite the binary-copy step to use ./bin/spotlight-files.

@@ -155,7 +155,7 @@ Architecture: ${ARCH}
 Installed-Size: ${INSTALLED_SIZE}
 Depends: plocate
 Recommends:
-Maintainer: Hostermen <hostermen@users.noreply.github.com>
+Maintainer: Hostermen <lukas.kuemmerle@gmail.com>
 Description: Spotlight-style launcher for Linux
  Spotlight Linux provides instant application and file search, an inline
  calculator, and a double-Shift hotkey to summon a macOS-style translucent
