@@ -11,6 +11,8 @@ use crate::model::AppEntry;
 use std::collections::HashSet;   // deduplicates by .desktop file id
 use std::fs;
 use std::path::Path;
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 /// Load and parse every visible `.desktop` application entry across all
 /// application directories. Returns apps sorted by name (case-insensitive).
@@ -42,6 +44,38 @@ pub fn load_apps() -> Vec<AppEntry> {
     // Deterministic ordering for the UI.
     apps.sort_by_key(|a| a.name.to_lowercase());
     apps
+}
+
+// ── Cached app list for the long-running daemon ────────────────────────
+//
+// The search daemon answers many queries over its lifetime; re-scanning and
+// re-parsing every `.desktop` file on the system (160+ files) on each query
+// is pure waste. We cache the parsed list and only refresh it at most once
+// per TTL window, so newly installed apps show up within `APP_TTL` without
+// paying the re-scan cost on every keystroke.
+
+/// Process-global cache: (apps, when last refreshed).
+static APP_CACHE: Mutex<Option<(Vec<AppEntry>, Instant)>> = Mutex::new(None);
+/// How long a cached app list is considered fresh before a re-scan.
+const APP_TTL: Duration = Duration::from_secs(30);
+
+/// Like `load_apps` but served from a process-wide cache refreshed at most
+/// every `APP_TTL`. Used by the daemon's search server; the one-shot
+/// `--search` CLI keeps using the uncached `load_apps` (a fresh process
+/// pays the scan once anyway).
+pub fn load_apps_cached() -> Vec<AppEntry> {
+    let mut guard = APP_CACHE.lock().unwrap();
+    let need_refresh = match guard.as_ref() {
+        Some((_, t)) => t.elapsed() >= APP_TTL,
+        None => true,
+    };
+    if need_refresh {
+        let apps = load_apps();
+        *guard = Some((apps.clone(), Instant::now()));
+        apps
+    } else {
+        guard.as_ref().unwrap().0.clone()
+    }
 }
 
 /// Build the ordered list of directories to scan for `.desktop` files.

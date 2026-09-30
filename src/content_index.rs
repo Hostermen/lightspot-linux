@@ -23,9 +23,10 @@ use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::{Field, Schema, STRING, TEXT, Value};
 use tantivy::snippet::SnippetGenerator;
-use tantivy::{doc, Index, IndexWriter, ReloadPolicy, TantivyDocument, Term};
+use tantivy::{doc, Index, IndexReader, IndexWriter, ReloadPolicy, TantivyDocument, Term};
 
 use notify::Watcher;
+use std::sync::OnceLock;
 
 /// Maximum file size we will read and index (2 MiB). Larger files are
 /// skipped to keep the index compact and indexing fast.
@@ -258,9 +259,24 @@ pub fn search_content(query: &str, limit: usize) -> Vec<ContentHit> {
         Ok(r) => r,
         Err(_) => return Vec::new(),
     };
+    collect_content_hits(&index, &reader, path_field, body_field, q, limit)
+}
+
+/// Shared query + snippet logic used by both the one-shot CLI path
+/// (`search_content`) and the long-lived daemon path (`search_content_warm`).
+/// Takes already-opened index/reader/field handles so the caller decides
+/// whether to open fresh (CLI) or reuse a warm, auto-reloading reader.
+fn collect_content_hits(
+    index: &Index,
+    reader: &IndexReader,
+    path_field: Field,
+    body_field: Field,
+    q: &str,
+    limit: usize,
+) -> Vec<ContentHit> {
     let searcher = reader.searcher();
 
-    let parser = QueryParser::for_index(&index, vec![body_field]);
+    let parser = QueryParser::for_index(index, vec![body_field]);
     let query = match parser.parse_query(q) {
         Ok(q) => q,
         Err(_) => return Vec::new(), // unparseable query → no content hits
@@ -301,6 +317,59 @@ pub fn search_content(query: &str, limit: usize) -> Vec<ContentHit> {
         });
     }
     out
+}
+
+// ── Warm, persistent reader for the long-running daemon ────────────────
+//
+// The search daemon stays alive for the whole session, so it can keep the
+// Tantivy index and a reader open permanently. `ReloadPolicy::OnCommit`
+// makes the reader auto-refresh whenever the background watcher commits a
+// batch of file changes, so content search always sees the latest index
+// without re-opening anything. This turns content search from a ~tens-of-ms
+// "open + mmap + query" into a sub-millisecond "searcher() + query".
+
+struct Warm {
+    index: Index,
+    reader: IndexReader,
+    path_field: Field,
+    body_field: Field,
+}
+
+static WARM: OnceLock<Option<Warm>> = OnceLock::new();
+
+/// Return a reference to the process-wide warm index/reader, opening it on
+/// first use. Returns `None` if the index can't be opened (the daemon then
+/// behaves as if content search is unavailable).
+fn warm() -> Option<&'static Warm> {
+    WARM.get_or_init(|| {
+        let (index, path_field, body_field) = open_or_create_index().ok()?;
+        let reader = index
+            .reader_builder()
+            .reload_policy(ReloadPolicy::OnCommitWithDelay)
+            .try_into()
+            .ok()?;
+        Some(Warm {
+            index,
+            reader,
+            path_field,
+            body_field,
+        })
+    })
+    .as_ref()
+}
+
+/// Daemon-side content search: uses the warm, auto-reloading reader instead
+/// of re-opening the index on every query. Same result shape as
+/// `search_content`.
+pub fn search_content_warm(query: &str, limit: usize) -> Vec<ContentHit> {
+    let q = query.trim();
+    if q.len() < 2 {
+        return Vec::new();
+    }
+    match warm() {
+        Some(w) => collect_content_hits(&w.index, &w.reader, w.path_field, w.body_field, q, limit),
+        None => Vec::new(),
+    }
 }
 
 /// Flush a batch of pending changed paths to the index writer and commit.

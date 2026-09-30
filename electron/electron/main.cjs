@@ -14,8 +14,9 @@
 
 const { app, BrowserWindow, ipcMain, screen, shell, clipboard, globalShortcut } = require('electron');
 const path = require('path');
-const { execFile, exec } = require('child_process');
+const { execFile, exec, spawn } = require('child_process');
 const net = require('net');
+const readline = require('readline');
 const fs = require('fs');
 const os = require('os');
 
@@ -23,6 +24,10 @@ const os = require('os');
 const BINARY_PATH = path.join(os.homedir(), '.local', 'bin', 'spotlight-files');
 // Unix socket the Rust daemon writes "toggle"/"show"/"hide" to.
 const SOCKET_PATH = '/tmp/spotlight-files.sock';
+// Unix socket the Rust daemon serves search JSON over. The Electron app
+// connects here per query instead of spawning a `--search` subprocess,
+// which keeps the backend's app list + Tantivy index warm in memory.
+const SEARCH_SOCKET = '/tmp/spotlight-search.sock';
 // `--dev` flag switches the window source from the built bundle to the Vite dev server.
 const IS_DEV = process.argv.includes('--dev');
 
@@ -136,9 +141,13 @@ function toggleWindow() {
 // Persisted across searches so we only call Python3 for new icon names.
 const iconCache = {};
 
-// Python3 script that resolves freedesktop icon names to file paths via
-// GTK3's IconTheme, reads the file, and outputs base64 data URLs.
-const ICON_PY_SCRIPT = [
+// Python3 script run as a PERSISTENT child process. It imports GTK once
+// (the expensive part, ~400ms), then enters a request loop: it reads icon
+// names from stdin (one per line, terminated by a blank line) and writes
+// `name\tmime\tdata` lines to stdout. Keeping the process alive means
+// every icon batch after the first skips the GTK import and resolves in
+// just a few milliseconds.
+const ICON_PY_SERVER = [
   'import gi, sys, base64',
   'gi.require_version("Gtk", "3.0")',
   'from gi.repository import Gtk',
@@ -146,12 +155,15 @@ const ICON_PY_SCRIPT = [
   'def lookup(name):',
   '    icon = theme.lookup_icon(name, 48, 0)',
   '    if icon: return icon',
-  '    # Fallback: if specific MIME icon missing, try generic category icon.',
   '    for prefix, fallback in [("text-", "text-x-generic"), ("application-", "application-x-generic"), ("image-", "image-x-generic"), ("audio-", "audio-x-generic"), ("video-", "video-x-generic")]:',
   '        if name.startswith(prefix) and name != fallback:',
   '            return theme.lookup_icon(fallback, 48, 0)',
   '    return theme.lookup_icon("text-x-generic", 48, 0)',
-  'for name in sys.argv[1:]:',
+  'while True:',
+  '    line = sys.stdin.readline()',
+  '    if not line: break',
+  '    name = line.strip()',
+  '    if not name: continue',
   '    icon = lookup(name)',
   '    if icon:',
   '        path = icon.get_filename()',
@@ -165,7 +177,57 @@ const ICON_PY_SCRIPT = [
   '            sys.stdout.write(name + "\\tNOTFOUND\\t\\n")',
   '    else:',
   '        sys.stdout.write(name + "\\tNOTFOUND\\t\\n")',
+  '    sys.stdout.flush()',
 ].join('\n');
+
+// The persistent Python process + its stdout line reader. Lazily spawned
+// on first icon request so apps that never show icons never pay the cost.
+let iconProc = null;
+let iconProcStdout = null;
+// Queue of pending icon-batch requests: each entry holds the names being
+// resolved and the promise resolver. Responses arrive in order, so the
+// head of the queue is always the one receiving lines.
+const iconQueue = [];
+
+function ensureIconProc() {
+  if (iconProc) return;
+  iconProc = spawn('python3', ['-c', ICON_PY_SERVER], { stdio: ['pipe', 'pipe', 'ignore'] });
+  iconProcStdout = readline.createInterface({ input: iconProc.stdout });
+  iconProcStdout.on('line', (line) => {
+    if (iconQueue.length === 0) return;
+    const pending = iconQueue[0];
+    const [name, mime, data] = line.split('\t');
+    if (name) {
+      if (mime === 'NOTFOUND' || !data) {
+        iconCache[name] = null;
+      } else {
+        iconCache[name] = `data:${mime};base64,${data}`;
+      }
+      pending.received++;
+    }
+    // When the current batch has received all its responses, resolve it.
+    if (pending.received >= pending.count) {
+      iconQueue.shift();
+      const result = {};
+      for (const n of pending.names) result[n] = iconCache[n] ?? null;
+      pending.resolve(result);
+    }
+  });
+  iconProc.on('error', () => {
+    // If the process can't start, fail all pending and mark for retry.
+    while (iconQueue.length) {
+      const p = iconQueue.shift();
+      for (const n of p.names) iconCache[n] = null;
+      p.resolve({});
+    }
+    iconProc = null;
+    iconProcStdout = null;
+  });
+  iconProc.on('exit', () => {
+    iconProc = null;
+    iconProcStdout = null;
+  });
+}
 
 // Resolve a list of freedesktop icon names to data URLs.
 // Returns a map: { iconName: "data:image/png;base64,..." | null }.
@@ -181,25 +243,19 @@ function resolveIcons(iconNames) {
       return;
     }
 
-    execFile('python3', ['-c', ICON_PY_SCRIPT, ...uncached], (err, stdout) => {
-      if (!err && stdout) {
-        for (const line of stdout.trim().split('\n')) {
-          if (!line) continue;
-          const [name, mime, data] = line.split('\t');
-          if (!name) continue;
-          if (mime === 'NOTFOUND' || !data) {
-            iconCache[name] = null;
-          } else {
-            iconCache[name] = `data:${mime};base64,${data}`;
-          }
-        }
-      } else {
-        for (const n of uncached) iconCache[n] = null;
-      }
+    ensureIconProc();
+    if (!iconProc) {
+      // Process failed to start — degrade gracefully to nulls.
+      for (const n of uncached) iconCache[n] = null;
       const result = {};
       for (const n of unique) result[n] = iconCache[n] ?? null;
       resolve(result);
-    });
+      return;
+    }
+
+    // Enqueue this batch and write the names to the process's stdin.
+    iconQueue.push({ names: uncached, count: uncached.length, received: 0, resolve });
+    for (const n of uncached) iconProc.stdin.write(n + '\n');
   });
 }
 
@@ -210,8 +266,35 @@ ipcMain.handle('get-icons', async (_event, iconNames) => {
   return resolveIcons(iconNames);
 });
 
-// Run a search: shell out to the Rust binary's `--search` JSON mode.
+// Run a query against the daemon's warm search socket. Falls back to
+// spawning the backend binary with `--search` if the socket isn't
+// available (e.g. the daemon isn't up yet at app launch, or a very old
+// install without the search server). The socket path is the query
+// followed by a newline; the daemon replies with one JSON line.
+function searchViaSocket(query) {
+  return new Promise((resolve, reject) => {
+    const sock = net.createConnection(SEARCH_SOCKET);
+    let buf = '';
+    const timer = setTimeout(() => sock.destroy(new Error('search socket timeout')), 3000);
+    sock.on('data', (d) => { buf += d.toString(); });
+    sock.on('end', () => { clearTimeout(timer); resolve(buf); });
+    sock.on('error', (e) => { clearTimeout(timer); reject(e); });
+    sock.on('connect', () => sock.write(query + '\n'));
+  });
+}
+
+// Run a search. Tries the warm daemon socket first (fast path); on any
+// failure (socket missing / daemon not running / parse error) it falls
+// back to the one-shot `--search` subprocess so the app still works.
 ipcMain.handle('search', async (_event, query) => {
+  try {
+    const out = await searchViaSocket(query);
+    if (out && out.trim()) {
+      return JSON.parse(out);
+    }
+  } catch (_) {
+    // Socket unavailable — fall through to the subprocess fallback.
+  }
   return new Promise((resolve, reject) => {
     execFile(BINARY_PATH, ['--search', query], (err, stdout, stderr) => {
       if (err) {

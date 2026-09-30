@@ -51,7 +51,9 @@ function App() {
       return;
     }
     setLoading(true);
-    // Wait 150ms after the last keystroke before searching (avoid keystroke spam).
+    // Wait 80ms after the last keystroke before searching. With the
+    // warm-socket backend (~10ms/query) this is fast enough to feel
+    // immediate while still coalescing rapid typing.
     debounceRef.current = setTimeout(async () => {
       try {
         const json = await window.electronAPI.search(query); // IPC → Rust backend
@@ -62,7 +64,7 @@ function App() {
       } finally {
         setLoading(false);
       }
-    }, 150);
+    }, 80);
     // Cleanup: cancel the timer if the query changes before it fires.
     return () => clearTimeout(debounceRef.current);
   }, [query]);

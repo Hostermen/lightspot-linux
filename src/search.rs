@@ -619,6 +619,22 @@ pub fn search(query: &str) -> Vec<DisplayItem> {
     build_results(query, &apps, &file_hits, &content_hits)
 }
 
+/// Daemon-side variant of `search`: uses the cached app list and the warm
+/// Tantivy reader so it doesn't re-parse `.desktop` files or re-open the
+/// index on every query. Used by the search socket server.
+pub fn search_cached(query: &str) -> Vec<DisplayItem> {
+    let apps = app_search::load_apps_cached();
+    let (file_hits, content_hits) = if query.trim().len() >= 2 {
+        (
+            file_search::search_files(query, 100),
+            content_index::search_content_warm(query, 20),
+        )
+    } else {
+        (Vec::new(), Vec::new())
+    };
+    build_results(query, &apps, &file_hits, &content_hits)
+}
+
 /// Escape a string for safe inclusion inside a JSON string literal.
 /// We hand-roll JSON (no serde) to keep the binary tiny, so we must escape.
 fn escape_json(s: &str) -> String {
@@ -659,7 +675,18 @@ fn action_data(a: &Action) -> &str {
 /// Produce the JSON the Electron frontend renders. Shape:
 ///   {"items":[{"title":..,"subtitle":..,"icon":..,"action_type":..,"action_data":..}, ...]}
 pub fn search_json(query: &str) -> String {
-    let items = search(query);
+    serialize(&search(query))
+}
+
+/// Daemon-side JSON search (uses cached apps + warm reader). Same JSON
+/// shape as `search_json`.
+pub fn search_json_cached(query: &str) -> String {
+    serialize(&search_cached(query))
+}
+
+/// Serialize a list of `DisplayItem`s into the single-line JSON object the
+/// Electron frontend expects. Shared by the CLI and daemon paths.
+fn serialize(items: &[DisplayItem]) -> String {
     // Serialize each item as its own JSON object.
     let parts: Vec<String> = items
         .iter()

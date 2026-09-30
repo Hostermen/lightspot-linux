@@ -15,6 +15,7 @@ mod file_search;
 mod keywatch;
 mod model;
 mod search;
+mod server;
 
 use std::io::Write;
 use std::os::unix::net::UnixStream;
@@ -50,6 +51,10 @@ fn run_daemon() {
     // Start the background content indexer (initial full build + watcher).
     // Runs in its own thread so it never blocks the hotkey listener.
     content_index::spawn_indexer();
+    // Start the search socket server so the Electron UI can run queries
+    // against the warm, in-memory app list + Tantivy index instead of
+    // spawning a fresh `--search` subprocess on every keystroke.
+    server::spawn_search_server();
     // Channel: the keywatch thread sends `()` on every double-Shift; the
     // main loop receives it and triggers the Electron app over the socket.
     let (tx, rx) = mpsc::channel::<()>();
