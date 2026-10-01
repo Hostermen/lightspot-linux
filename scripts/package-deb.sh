@@ -98,17 +98,24 @@ SYSTEMD_FLAGS+=("--setenv=XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR}")
 if [ "$SESSION_TYPE" = "wayland" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
     SYSTEMD_FLAGS+=("--setenv=WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0}")
     SYSTEMD_FLAGS+=("--setenv=XDG_SESSION_TYPE=wayland")
+    SYSTEMD_FLAGS+=("--setenv=GDK_BACKEND=x11")
+    SYSTEMD_FLAGS+=("--setenv=CLUTTER_BACKEND=x11")
 else
     SYSTEMD_FLAGS+=("--setenv=GDK_BACKEND=x11")
     SYSTEMD_FLAGS+=("--setenv=CLUTTER_BACKEND=x11")
 fi
 [ -n "${DISPLAY:-}" ] && SYSTEMD_FLAGS+=("--setenv=DISPLAY=${DISPLAY}")
 systemd-run --user --unit=spotlight-electron \
+    --property=Restart=on-failure \
+    --property=RestartSec=2s \
     --working-directory="$APP_DIR" \
     "${SYSTEMD_FLAGS[@]}" \
     "$ELECTRON" --no-sandbox "$APP_DIR"
 
-systemd-run --user --unit=spotlight-daemon "$BINARY"
+systemd-run --user --unit=spotlight-daemon \
+    --property=Restart=on-failure \
+    --property=RestartSec=2s \
+    "$BINARY"
 
 sleep 1
 echo "Spotlight Linux launched. Press double-Shift to toggle."

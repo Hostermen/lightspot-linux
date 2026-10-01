@@ -53,11 +53,9 @@ app.commandLine.appendSwitch('disable-gpu-sandbox');
 app.commandLine.appendSwitch('disable-vulkan');
 app.commandLine.appendSwitch('use-gl', 'angle');
 app.commandLine.appendSwitch('use-angle', 'swiftshader');
-// Use native Wayland when available (needed for alpha transparency),
-// but don't force it on X11 sessions.
-if (process.env.XDG_SESSION_TYPE === 'wayland' || process.env.WAYLAND_DISPLAY) {
-    app.commandLine.appendSwitch('ozone-platform=wayland');
-}
+// Ozone platform selection happens before V8 starts, so --ozone-platform=wayland
+// and --enable-features=UseOzonePlatform are passed as CLI args by start.sh
+// rather than here. app.commandLine.appendSwitch() runs too late for them.
 
 let win = null;   // the single Spotlight window (created lazily)
 let showTime = 0;  // timestamp of last show() — used to ignore spurious blur on Wayland

@@ -30,26 +30,32 @@ sleep 0.3
 rm -f "$SOCKET"
 
 # Start Electron (UI) as a detached systemd user unit.
-# Detect display session: on Wayland, let Electron use ozone-platform=wayland
-# (set in main.cjs) natively — forcing GDK_BACKEND=x11 causes XWayland connection
-# drops that crash Electron every ~30 min. On X11, set the X11 backends.
+# Electron runs under XWayland by default, where win.setBounds({x,y})
+# positioning works. On native Wayland the compositor ignores client
+# positioning, so we don't pass --ozone-platform=wayland.
 SESSION_TYPE="${XDG_SESSION_TYPE:-x11}"
 SYSTEMD_FLAGS=()
 SYSTEMD_FLAGS+=("--setenv=DISPLAY=${DISPLAY:-:0}")
 if [ "$SESSION_TYPE" = "wayland" ]; then
     SYSTEMD_FLAGS+=("--setenv=WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0}")
     SYSTEMD_FLAGS+=("--setenv=XDG_SESSION_TYPE=wayland")
+    SYSTEMD_FLAGS+=("--setenv=GDK_BACKEND=x11")
+    SYSTEMD_FLAGS+=("--setenv=CLUTTER_BACKEND=x11")
 else
     SYSTEMD_FLAGS+=("--setenv=GDK_BACKEND=x11")
     SYSTEMD_FLAGS+=("--setenv=CLUTTER_BACKEND=x11")
 fi
 systemd-run --user --unit=spotlight-electron \
+    --property=Restart=on-failure \
+    --property=RestartSec=2s \
     --working-directory="$ELECTRON_DIR" \
     "${SYSTEMD_FLAGS[@]}" \
     "$ELECTRON" --no-sandbox "$ELECTRON_DIR"
 
 # Start the Rust daemon (double-Shift hotkey listener).
 systemd-run --user --unit=spotlight-daemon \
+    --property=Restart=on-failure \
+    --property=RestartSec=2s \
     "$BINARY"
 
 sleep 1

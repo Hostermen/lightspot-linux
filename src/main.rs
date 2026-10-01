@@ -27,7 +27,7 @@ use std::sync::mpsc;
 /// Path of the Unix-domain socket the Electron app listens on.
 const SOCKET_PATH: &str = "/tmp/spotlight-files.sock";
 
-/// Send a one-word command ("toggle" / "show" / "hide") to the Electron app
+/// Send a one-word command ("toggle") to the Electron app
 /// via the socket. Failure is silently ignored (app may not be running yet).
 fn toggle_extension() {
     if let Ok(mut sock) = UnixStream::connect(SOCKET_PATH) {
