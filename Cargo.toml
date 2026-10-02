@@ -1,17 +1,17 @@
 [package]
-name = "spotlight-files"
+name = "lightspot-files"
 version = "0.3.0"
 edition = "2021"
-description = "Lightweight Spotlight-style launcher for Linux with app + file search"
+description = "Lightweight keyboard-driven launcher for Linux with app + file search"
 license = "GPL-3.0-or-later"
-repository = "https://github.com/Hostermen/spotlight-linux"
+repository = "https://github.com/Hostermen/lightspot-linux"
 readme = "README.md"
 authors = ["Hostermen"]
 keywords = ["launcher", "spotlight", "search", "desktop", "linux"]
 categories = ["command-line-utilities", "gui"]
 
 [[bin]]
-name = "spotlight-files"
+name = "lightspot-files"
 path = "src/main.rs"
 
 [dependencies]

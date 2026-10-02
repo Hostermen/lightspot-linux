@@ -3,16 +3,16 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Hostermen
 
-# package.sh — Build a self-contained release tarball for spotlight-files.
+# package.sh — Build a self-contained release tarball for lightspot-files.
 #
 # The tarball bundles:
-#   - The prebuilt Rust backend binary (target/release/spotlight-files)
+#   - The prebuilt Rust backend binary (target/release/lightspot-files)
 #   - The built Electron frontend (electron/dist/)
 #   - The Electron main/preload scripts and package.json (so electron can run)
 #   - The install/uninstall/start/stop scripts
 #   - This README
 #
-# Output: dist/spotlight-linux-<version>.tar.gz
+# Output: dist/lightspot-linux-<version>.tar.gz
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -21,7 +21,7 @@ DIST_DIR="$PROJECT_DIR/dist"
 
 # Read the version from Cargo.toml ([package] version = "...").
 VERSION="$(grep -m1 '^version' "$PROJECT_DIR/Cargo.toml" | sed -E 's/.*"([^"]+)".*/\1/')"
-PKG_NAME="spotlight-linux-$VERSION"
+PKG_NAME="lightspot-linux-$VERSION"
 STAGE="$DIST_DIR/$PKG_NAME"
 
 echo "=== Building Rust backend (release) ==="
@@ -46,7 +46,7 @@ rm -rf "$STAGE"
 mkdir -p "$STAGE/bin" "$STAGE/electron/dist" "$STAGE/scripts"
 
 # Rust backend binary.
-cp -f "$PROJECT_DIR/target/release/spotlight-files" "$STAGE/bin/"
+cp -f "$PROJECT_DIR/target/release/lightspot-files" "$STAGE/bin/"
 
 # Electron app: main/preload, built frontend, package.json, index.html.
 cp -f "$PROJECT_DIR/electron/electron/main.cjs"  "$STAGE/electron/main.cjs"
@@ -65,7 +65,7 @@ cp -f "$PROJECT_DIR/README.md" "$STAGE/"
 
 # Patch install-user.sh to reference the bundled binary path instead of
 # rebuilding from source (release tarballs ship prebuilt binaries).
-# We rewrite the binary-copy step to use ./bin/spotlight-files.
+# We rewrite the binary-copy step to use ./bin/lightspot-files.
 python3 - "$STAGE/scripts/install-user.sh" <<'PY'
 import sys, re
 p = sys.argv[1]

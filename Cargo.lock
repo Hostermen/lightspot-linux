@@ -540,6 +540,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 
 [[package]]
+name = "lightspot-files"
+version = "0.3.0"
+dependencies = [
+ "evdev",
+ "ignore",
+ "notify",
+ "tantivy",
+ "tempfile",
+]
+
+[[package]]
 name = "linux-raw-sys"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -898,17 +909,6 @@ name = "smallvec"
 version = "1.16.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9395f0f0eee849a9b707b2f06bb92a6a422090e2123bb2ef8e87a0e61892a8e"
-
-[[package]]
-name = "spotlight-files"
-version = "0.2.0"
-dependencies = [
- "evdev",
- "ignore",
- "notify",
- "tantivy",
- "tempfile",
-]
 
 [[package]]
 name = "stable_deref_trait"

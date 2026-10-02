@@ -4,7 +4,7 @@
 // content_index.rs — Full-text content index (Tantivy) + file watcher.
 //
 // This module builds and maintains a persistent full-text index of file
-// *contents* under the user's home directory (or `$SPOTLIGHT_INDEX_DIRS`).
+// *contents* under the user's home directory (or `$LIGHTSPOT_INDEX_DIRS`).
 // The daemon spawns a background thread that performs an initial full
 // reindex and then watches the filesystem for changes, incrementally
 // updating the index. The search subprocess (`--search`) opens the same
@@ -72,13 +72,13 @@ fn index_dir() -> PathBuf {
             let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
             PathBuf::from(home).join(".cache")
         });
-    base.join("spotlight-linux").join("index")
+    base.join("lightspot-linux").join("index")
 }
 
-/// The list of directories to index. Reads `$SPOTLIGHT_INDEX_DIRS`
+/// The list of directories to index. Reads `$LIGHTSPOT_INDEX_DIRS`
 /// (colon-separated); defaults to `$HOME` if unset or empty.
 fn index_dirs() -> Vec<PathBuf> {
-    if let Ok(s) = std::env::var("SPOTLIGHT_INDEX_DIRS") {
+    if let Ok(s) = std::env::var("LIGHTSPOT_INDEX_DIRS") {
         let dirs: Vec<PathBuf> = s
             .split(':')
             .filter(|d| !d.is_empty())
@@ -182,14 +182,14 @@ pub fn build_index() -> usize {
     let (index, path_field, body_field) = match open_or_create_index() {
         Ok(t) => t,
         Err(e) => {
-            eprintln!("spotlight-files: cannot open content index: {e}");
+            eprintln!("lightspot-files: cannot open content index: {e}");
             return 0;
         }
     };
     let mut writer = match index.writer(50_000_000) {
         Ok(w) => w,
         Err(e) => {
-            eprintln!("spotlight-files: cannot open index writer: {e}");
+            eprintln!("lightspot-files: cannot open index writer: {e}");
             return 0;
         }
     };
@@ -230,10 +230,10 @@ pub fn build_index() -> usize {
         }
     }
     if let Err(e) = writer.commit() {
-        eprintln!("spotlight-files: index commit failed: {e}");
+        eprintln!("lightspot-files: index commit failed: {e}");
         return 0;
     }
-    eprintln!("spotlight-files: indexed {count} documents");
+    eprintln!("lightspot-files: indexed {count} documents");
     count
 }
 
@@ -405,7 +405,7 @@ fn flush(
         index_one(writer, path_field, body_field, &p);
     }
     if let Err(e) = writer.commit() {
-        eprintln!("spotlight-files: watcher commit failed: {e}");
+        eprintln!("lightspot-files: watcher commit failed: {e}");
     }
 }
 
@@ -424,7 +424,7 @@ fn watch_loop() {
         }) {
             Ok(w) => w,
             Err(e) => {
-                eprintln!("spotlight-files: watcher init failed: {e}");
+                eprintln!("lightspot-files: watcher init failed: {e}");
                 return;
             }
         };
@@ -438,14 +438,14 @@ fn watch_loop() {
     let (index, path_field, body_field) = match open_or_create_index() {
         Ok(t) => t,
         Err(e) => {
-            eprintln!("spotlight-files: cannot open index for watcher: {e}");
+            eprintln!("lightspot-files: cannot open index for watcher: {e}");
             return;
         }
     };
     let mut writer = match index.writer(50_000_000) {
         Ok(w) => w,
         Err(e) => {
-            eprintln!("spotlight-files: cannot open writer for watcher: {e}");
+            eprintln!("lightspot-files: cannot open writer for watcher: {e}");
             return;
         }
     };
@@ -482,7 +482,7 @@ fn watch_loop() {
 /// every file under the index dirs on every start pegs CPU and disk for
 /// tens of seconds, which starves the concurrently-starting Electron GPU
 /// process and triggers its crash (GPU error 1002). The watcher keeps an
-/// existing index current; run `spotlight-files --index` to force a
+/// existing index current; run `lightspot-files --index` to force a
 /// full rebuild.
 pub fn spawn_indexer() {
     std::thread::spawn(|| {
@@ -490,7 +490,7 @@ pub fn spawn_indexer() {
             build_index();
         } else {
             eprintln!(
-                "spotlight-files: index present, skipping full rebuild \
+                "lightspot-files: index present, skipping full rebuild \
                  (watcher tracks changes; use '--index' to force)"
             );
         }
@@ -505,11 +505,11 @@ mod tests {
     use std::sync::{Mutex, MutexGuard};
 
     /// Serializes tests that mutate process-global env vars so their
-    /// `XDG_CACHE_HOME` / `SPOTLIGHT_INDEX_DIRS` settings don't clobber each
+    /// `XDG_CACHE_HOME` / `LIGHTSPOT_INDEX_DIRS` settings don't clobber each
     /// other when cargo runs tests in parallel.
     static ENV_LOCK: Mutex<()> = Mutex::new(());
 
-    /// Run a closure with `$SPOTLIGHT_INDEX_DIRS` pointed at a temp dir and
+    /// Run a closure with `$LIGHTSPOT_INDEX_DIRS` pointed at a temp dir and
     /// `$XDG_CACHE_HOME` pointed at a temp cache, so tests are isolated.
     /// Holds `ENV_LOCK` for the duration to serialize env access.
     fn with_temp_env<F>(inner: F)
@@ -519,10 +519,10 @@ mod tests {
         let _guard: MutexGuard<'static, ()> = ENV_LOCK.lock().unwrap();
         let root = tempfile::tempdir().unwrap();
         let cache = tempfile::tempdir().unwrap();
-        std::env::set_var("SPOTLIGHT_INDEX_DIRS", root.path().to_str().unwrap());
+        std::env::set_var("LIGHTSPOT_INDEX_DIRS", root.path().to_str().unwrap());
         std::env::set_var("XDG_CACHE_HOME", cache.path().to_str().unwrap());
         inner(root.path());
-        std::env::remove_var("SPOTLIGHT_INDEX_DIRS");
+        std::env::remove_var("LIGHTSPOT_INDEX_DIRS");
         std::env::remove_var("XDG_CACHE_HOME");
     }
 

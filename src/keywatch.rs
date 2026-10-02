@@ -63,15 +63,15 @@ pub fn spawn_keywatch(toggle_tx: Sender<()>) {
     if devices.is_empty() {
         // No readable keyboard devices — usually a permissions issue.
         eprintln!(
-            "spotlight-files: no readable keyboard devices — file hotkey disabled.\n\
+            "lightspot-files: no readable keyboard devices — file hotkey disabled.\n\
              Add yourself to the 'input' group and log out/in:\n  \
              sudo usermod -aG input $USER\n\
-             Or set a custom GNOME shortcut to: spotlight-files"
+             Or set a custom GNOME shortcut to: lightspot-files"
         );
         return;
     }
     eprintln!(
-        "spotlight-files: listening for double-Shift on {} keyboard device(s).",
+        "lightspot-files: listening for double-Shift on {} keyboard device(s).",
         devices.len()
     );
     // One watcher thread per device so a single blocked read can't starve others.

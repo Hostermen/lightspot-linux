@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Hostermen
 
-// main.rs — Entry point for the `spotlight-files` Rust backend.
+// main.rs — Entry point for the `lightspot-files` Rust backend.
 //
 // The backend has two runtime modes:
 //   1. `--search <query>` — print search results as JSON and exit. This is
@@ -9,7 +9,7 @@
 //      `--search <query>` and parses stdout.
 //   2. (default, no args) — daemon mode. Listens for the double-Shift hotkey
 //      via evdev and, on each trigger, writes `toggle` to the Unix socket at
-//      /tmp/spotlight-files.sock so the Electron app shows/hides its window.
+//      /tmp/lightspot-files.sock so the Electron app shows/hides its window.
 
 mod app_search;
 mod calculator;
@@ -25,7 +25,7 @@ use std::os::unix::net::UnixStream;
 use std::sync::mpsc;
 
 /// Path of the Unix-domain socket the Electron app listens on.
-const SOCKET_PATH: &str = "/tmp/spotlight-files.sock";
+const SOCKET_PATH: &str = "/tmp/lightspot-files.sock";
 
 /// Send a one-word command ("toggle") to the Electron app
 /// via the socket. Failure is silently ignored (app may not be running yet).
@@ -47,7 +47,7 @@ fn run_daemon() {
     // File search is optional; warn (don't crash) if plocate isn't installed.
     if !file_search::plocate_available() {
         eprintln!(
-            "spotlight-files: 'plocate' not found — file search disabled.\n\
+            "lightspot-files: 'plocate' not found — file search disabled.\n\
              Install it:  sudo apt install plocate && sudo updatedb.plocate"
         );
     }
@@ -62,7 +62,7 @@ fn run_daemon() {
     // main loop receives it and triggers the Electron app over the socket.
     let (tx, rx) = mpsc::channel::<()>();
     keywatch::spawn_keywatch(tx);
-    eprintln!("spotlight-files: daemon running (double-Shift to toggle)");
+    eprintln!("lightspot-files: daemon running (double-Shift to toggle)");
     // Block forever: each received event toggles the Electron window.
     loop {
         if rx.recv().is_ok() {
@@ -91,15 +91,15 @@ fn main() {
             }
             // Help text.
             "--help" | "-h" => {
-                println!("spotlight-files — Spotlight-style launcher for Linux");
+                println!("lightspot-files — keyboard-driven launcher for Linux");
                 println!();
                 println!("USAGE:");
-                println!("  spotlight-files              Run as daemon (double-Shift hotkey → Electron UI)");
-                println!("  spotlight-files --search Q   Output JSON search results for query Q and exit");
+                println!("  lightspot-files              Run as daemon (double-Shift hotkey → Electron UI)");
+                println!("  lightspot-files --search Q   Output JSON search results for query Q and exit");
                 println!(
-                    "  spotlight-files --index      (Re)build the full-text content index and exit"
+                    "  lightspot-files --index      (Re)build the full-text content index and exit"
                 );
-                println!("  spotlight-files --help       Show this help");
+                println!("  lightspot-files --help       Show this help");
                 return;
             }
             _ => {} // unknown flag → fall through to daemon mode

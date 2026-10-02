@@ -137,7 +137,7 @@ function App() {
   // a window resize on every intermediate state — only the final one.
   useEffect(() => {
     const t = setTimeout(() => {
-      const el = document.querySelector('.spotlight');
+      const el = document.querySelector('.lightspot');
       if (el) {
         const h = Math.ceil(el.getBoundingClientRect().height);
         window.electronAPI?.resize(h);
@@ -147,7 +147,7 @@ function App() {
   }, [results]);
 
   return (
-    <div className="spotlight" onKeyDown={handleKey}>
+    <div className="lightspot" onKeyDown={handleKey}>
       {/* Search bar: magnifier icon + text input */}
       <div className="search-bar">
         <svg className="magnifier" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

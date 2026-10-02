@@ -23,5 +23,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Resolve freedesktop icon names to data URLs.
   getIcons: (iconNames) => ipcRenderer.invoke('get-icons', iconNames),
   // Register a callback for when the main process signals the window was shown.
-  onShow: (callback) => ipcRenderer.on('spotlight-show', () => callback()),
+  onShow: (callback) => ipcRenderer.on('lightspot-show', () => callback()),
 });

@@ -3,16 +3,16 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Hostermen
 
-# package-deb.sh — Build a self-contained .deb package for spotlight-linux.
+# package-deb.sh — Build a self-contained .deb package for lightspot-linux.
 #
 # The package bundles:
-#   - The prebuilt Rust backend binary (→ /usr/bin/spotlight-files)
-#   - The Electron runtime + built frontend (→ /usr/lib/spotlight-linux/electron/)
-#   - start/stop wrapper scripts (→ /usr/bin/spotlight-start, spotlight-stop)
+#   - The prebuilt Rust backend binary (→ /usr/bin/lightspot-files)
+#   - The Electron runtime + built frontend (→ /usr/lib/lightspot-linux/electron/)
+#   - start/stop wrapper scripts (→ /usr/bin/lightspot-start, lightspot-stop)
 #   - A desktop menu entry (→ /usr/share/applications/)
 #   - An autostart entry (→ /etc/xdg/autostart/)
 #
-# Output: dist/spotlight-linux_<version>_amd64.deb
+# Output: dist/lightspot-linux_<version>_amd64.deb
 #
 # Requires: cargo, npm, dpkg-deb. Run on the target architecture (e.g. amd64).
 set -euo pipefail
@@ -23,7 +23,7 @@ DIST_DIR="$PROJECT_DIR/dist"
 
 # Read the version from Cargo.toml.
 VERSION="$(grep -m1 '^version' "$PROJECT_DIR/Cargo.toml" | sed -E 's/.*"([^"]+)".*/\1/')"
-PKG_NAME="spotlight-linux"
+PKG_NAME="lightspot-linux"
 ARCH="$(dpkg --print-architecture)"
 DEB_NAME="${PKG_NAME}_${VERSION}_${ARCH}"
 STAGE="$DIST_DIR/$DEB_NAME"
@@ -54,8 +54,8 @@ mkdir -p "$STAGE/DEBIAN" \
          "$STAGE/etc/xdg/autostart"
 
 # ── Rust backend ──────────────────────────────────────────────────────
-cp -f "$PROJECT_DIR/target/release/spotlight-files" "$STAGE/usr/bin/spotlight-files"
-chmod 0755 "$STAGE/usr/bin/spotlight-files"
+cp -f "$PROJECT_DIR/target/release/lightspot-files" "$STAGE/usr/bin/lightspot-files"
+chmod 0755 "$STAGE/usr/bin/lightspot-files"
 
 # ── Electron app (runtime + built frontend) ────────────────────────────
 # Bundle the Electron runtime so no npm/node is needed on the target.
@@ -92,19 +92,19 @@ chmod 0755 "$STAGE/usr/lib/$PKG_NAME/electron/runtime/electron" 2>/dev/null || t
 # These are generated here (not copied from scripts/) so the paths are
 # absolute and architecture-independent.
 
-cat > "$STAGE/usr/bin/spotlight-start" <<'EOF'
+cat > "$STAGE/usr/bin/lightspot-start" <<'EOF'
 #!/usr/bin/env bash
-# Launch Spotlight Linux (Electron UI + Rust daemon) as systemd user units.
+# Launch lightspot-linux (Electron UI + Rust daemon) as systemd user units.
 set -euo pipefail
 
-APP_DIR="/usr/lib/spotlight-linux/electron"
+APP_DIR="/usr/lib/lightspot-linux/electron"
 ELECTRON="$APP_DIR/runtime/electron"
-BINARY="/usr/bin/spotlight-files"
-SOCKET="/tmp/spotlight-files.sock"
+BINARY="/usr/bin/lightspot-files"
+SOCKET="/tmp/lightspot-files.sock"
 
-systemctl --user stop spotlight-electron spotlight-daemon 2>/dev/null || true
-systemctl --user reset-failed spotlight-electron spotlight-daemon 2>/dev/null || true
-pgrep -x spotlight-files | xargs -r kill 2>/dev/null || true
+systemctl --user stop lightspot-electron lightspot-daemon 2>/dev/null || true
+systemctl --user reset-failed lightspot-electron lightspot-daemon 2>/dev/null || true
+pgrep -x lightspot-files | xargs -r kill 2>/dev/null || true
 pgrep -x electron | xargs -r kill 2>/dev/null || true
 sleep 0.3
 rm -f "$SOCKET"
@@ -123,45 +123,45 @@ else
     SYSTEMD_FLAGS+=("--setenv=CLUTTER_BACKEND=x11")
 fi
 [ -n "${DISPLAY:-}" ] && SYSTEMD_FLAGS+=("--setenv=DISPLAY=${DISPLAY}")
-systemd-run --user --unit=spotlight-electron \
+systemd-run --user --unit=lightspot-electron \
     --property=Restart=on-failure \
     --property=RestartSec=2s \
     --working-directory="$APP_DIR" \
     "${SYSTEMD_FLAGS[@]}" \
     "$ELECTRON" --no-sandbox "$APP_DIR"
 
-systemd-run --user --unit=spotlight-daemon \
+systemd-run --user --unit=lightspot-daemon \
     --property=Restart=on-failure \
     --property=RestartSec=2s \
     "$BINARY"
 
 sleep 1
-echo "Spotlight Linux launched. Press double-Shift to toggle."
-echo "Logs: journalctl --user -u spotlight-electron, journalctl --user -u spotlight-daemon"
-echo "Stop: spotlight-stop"
+echo "lightspot-linux launched. Press double-Shift to toggle."
+echo "Logs: journalctl --user -u lightspot-electron, journalctl --user -u lightspot-daemon"
+echo "Stop: lightspot-stop"
 EOF
-chmod 0755 "$STAGE/usr/bin/spotlight-start"
+chmod 0755 "$STAGE/usr/bin/lightspot-start"
 
-cat > "$STAGE/usr/bin/spotlight-stop" <<'EOF'
+cat > "$STAGE/usr/bin/lightspot-stop" <<'EOF'
 #!/usr/bin/env bash
-# Stop Spotlight Linux.
+# Stop lightspot-linux.
 set -euo pipefail
-systemctl --user stop spotlight-electron spotlight-daemon 2>/dev/null || true
-pgrep -x spotlight-files | xargs -r kill 2>/dev/null || true
+systemctl --user stop lightspot-electron lightspot-daemon 2>/dev/null || true
+pgrep -x lightspot-files | xargs -r kill 2>/dev/null || true
 pgrep -x electron | xargs -r kill 2>/dev/null || true
-rm -f /tmp/spotlight-files.sock
-echo "Spotlight Linux stopped."
+rm -f /tmp/lightspot-files.sock
+echo "lightspot-linux stopped."
 EOF
-chmod 0755 "$STAGE/usr/bin/spotlight-stop"
+chmod 0755 "$STAGE/usr/bin/lightspot-stop"
 
 # ── Desktop menu entry ─────────────────────────────────────────────────
-cat > "$STAGE/usr/share/applications/spotlight-linux.desktop" <<EOF
+cat > "$STAGE/usr/share/applications/lightspot-linux.desktop" <<EOF
 [Desktop Entry]
 Type=Application
-Name=Spotlight Linux
+Name=lightspot-linux
 GenericName=Application and File Launcher
 Comment=Search apps and files instantly
-Exec=spotlight-start
+Exec=lightspot-start
 Icon=system-search
 Terminal=false
 Categories=Utility;System;FileTools;
@@ -170,11 +170,11 @@ StartupNotify=true
 EOF
 
 # ── Autostart entry ────────────────────────────────────────────────────
-cat > "$STAGE/etc/xdg/autostart/spotlight-linux.desktop" <<EOF
+cat > "$STAGE/etc/xdg/autostart/lightspot-linux.desktop" <<EOF
 [Desktop Entry]
 Type=Application
-Name=Spotlight Linux
-Exec=spotlight-start
+Name=lightspot-linux
+Exec=lightspot-start
 Icon=system-search
 Terminal=false
 X-GNOME-Autostart-enabled=true
@@ -183,7 +183,7 @@ EOF
 # ── DEBIAN/control ─────────────────────────────────────────────────────
 INSTALLED_SIZE="$(du -sk "$STAGE" | cut -f1)"
 cat > "$STAGE/DEBIAN/control" <<EOF
-Package: spotlight-linux
+Package: lightspot-linux
 Version: ${VERSION}
 Section: utils
 Priority: optional
@@ -192,8 +192,8 @@ Installed-Size: ${INSTALLED_SIZE}
 Depends: plocate
 Recommends:
 Maintainer: Hostermen <lukas.kuemmerle@gmail.com>
-Description: Spotlight-style launcher for Linux
- Spotlight Linux provides instant application and file search, an inline
+Description: keyboard-driven launcher for Linux
+ lightspot-linux provides instant application and file search, an inline
   calculator, and a double-Shift hotkey to summon a translucent
  launcher window. Built with a Rust backend (evdev hotkey + plocate search)
  and an Electron + React frontend.
@@ -211,7 +211,7 @@ set -e
 if [ "$1" = "configure" ]; then
     if ! groups | grep -qw input 2>/dev/null; then
         echo ""
-        echo "spotlight-linux: NOTE"
+        echo "lightspot-linux: NOTE"
         echo "  The double-Shift hotkey needs read access to /dev/input/event*."
         echo "  Run:  sudo usermod -aG input \$USER"
         echo "  Then log out and back in for it to take effect."
@@ -228,10 +228,10 @@ cat > "$STAGE/DEBIAN/prerm" <<'EOF'
 #!/usr/bin/env bash
 set -e
 if [ "$1" = "remove" ] || [ "$1" = "upgrade" ]; then
-    systemctl --user stop spotlight-electron spotlight-daemon 2>/dev/null || true
-    pgrep -x spotlight-files | xargs -r kill 2>/dev/null || true
+    systemctl --user stop lightspot-electron lightspot-daemon 2>/dev/null || true
+    pgrep -x lightspot-files | xargs -r kill 2>/dev/null || true
     pgrep -x electron | xargs -r kill 2>/dev/null || true
-    rm -f /tmp/spotlight-files.sock
+    rm -f /tmp/lightspot-files.sock
 fi
 exit 0
 EOF
@@ -250,4 +250,4 @@ echo "  $DEB_PATH  ($SIZE)"
 echo ""
 echo "Install with:"
 echo "  sudo apt install ./$DEB_NAME.deb"
-echo "  spotlight-start"
+echo "  lightspot-start"

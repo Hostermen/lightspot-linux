@@ -1,12 +1,12 @@
-# Spotlight Linux
+# lightspot-linux
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Rust](https://img.shields.io/badge/Rust-stable-orange.svg)](https://www.rust-lang.org/)
 [![Electron](https://img.shields.io/badge/Electron-31-47848F.svg)](https://www.electronjs.org/)
 
-A Spotlight-style launcher for Linux. Search applications and files, evaluate math expressions, and launch results instantly — summoned with a double-Shift.
+A keyboard-driven launcher for Linux. Search applications and files, evaluate math expressions, and launch results instantly — summoned with a double-Shift.
 
-Spotlight Linux is built as a small, persistent Rust daemon paired with an Electron + React frontend. The daemon captures the hotkey at the kernel level via `evdev` and serves search results over a Unix socket; the Electron app renders the frosted-glass UI and forwards activations to `gtk-launch` / `xdg-open`.
+lightspot-linux is built as a small, persistent Rust daemon paired with an Electron + React frontend. The daemon captures the hotkey at the kernel level via `evdev` and serves search results over a Unix socket; the Electron app renders the frosted-glass UI and forwards activations to `gtk-launch` / `xdg-open`.
 
 ## Features
 
@@ -36,33 +36,33 @@ sudo usermod -aG input "$USER"   # then log out and back in
 
 ### Debian package
 
-Download the latest `.deb` from the [releases page](https://github.com/Hostermen/spotlight-linux/releases) (if available) and install it:
+Download the latest `.deb` from the [releases page](https://github.com/Hostermen/lightspot-linux/releases) (if available) and install it:
 
 ```bash
-sudo apt install ./spotlight-linux_<version>_amd64.deb
+sudo apt install ./lightspot-linux_<version>_amd64.deb
 ```
 
 The package installs the backend binary, the Electron frontend (bundled), desktop menu and autostart entries, and the start/stop scripts. After installing, log out and back in (for the `input` group), then start it:
 
 ```bash
-spotlight-start
+lightspot-start
 ```
 
-Press double-Shift to summon Spotlight.
+Press double-Shift to summon the launcher.
 
 ### Release tarball
 
 ```bash
-tar xf spotlight-linux-<version>.tar.gz
-cd spotlight-linux-<version>/
+tar xf lightspot-linux-<version>.tar.gz
+cd lightspot-linux-<version>/
 ./scripts/install-user.sh
 ```
 
 ### Build from source (recommended)
 
 ```bash
-git clone https://github.com/Hostermen/spotlight-linux.git
-cd spotlight-linux
+git clone https://github.com/Hostermen/lightspot-linux.git
+cd lightspot-linux
 
 # Backend
 cargo build --release
@@ -89,22 +89,22 @@ cd .. && ./scripts/install-user.sh
 Start and stop the launcher manually:
 
 ```bash
-spotlight-start    # launches the Electron UI + Rust daemon
-spotlight-stop     # stops both
+lightspot-start    # launches the Electron UI + Rust daemon
+lightspot-stop     # stops both
 ```
 
 Logs are available via systemd user units:
 
 ```bash
-journalctl --user -u spotlight-electron -f   # Electron UI
-journalctl --user -u spotlight-daemon -f      # Rust hotkey daemon
+journalctl --user -u lightspot-electron -f   # Electron UI
+journalctl --user -u lightspot-daemon -f      # Rust hotkey daemon
 ```
 
 Uninstall:
 
 ```bash
 # Debian package
-sudo apt remove spotlight-linux
+sudo apt remove lightspot-linux
 
 # User-level install
 ./scripts/uninstall-user.sh
@@ -112,11 +112,11 @@ sudo apt remove spotlight-linux
 
 ## How it works
 
-The Rust daemon reads keyboard events directly from `/dev/input/event*` via the Linux `evdev` interface, so the hotkey works regardless of which application has focus. It detects two Shift presses within 280 ms (auto-repeat ignored) and writes `toggle` to `/tmp/spotlight-files.sock`, causing the Electron app to show or hide its window.
+The Rust daemon reads keyboard events directly from `/dev/input/event*` via the Linux `evdev` interface, so the hotkey works regardless of which application has focus. It detects two Shift presses within 280 ms (auto-repeat ignored) and writes `toggle` to `/tmp/lightspot-files.sock`, causing the Electron app to show or hide its window.
 
-When the user types, the Electron renderer sends the query to the daemon over a Unix socket (`/tmp/spotlight-search.sock`). The daemon queries its in-memory app list (cached with a 30 s TTL), runs `plocate` (for queries of two or more characters), queries the warm Tantivy content index, evaluates the input as math when applicable, and returns a single JSON document. This avoids spawning a new process on every keystroke, keeping the app list and index warm in memory. The renderer displays the results and, on Enter, asks the main process to launch the app with `gtk-launch`, open the file with `xdg-open`, or copy a calculator result to the clipboard.
+When the user types, the Electron renderer sends the query to the daemon over a Unix socket (`/tmp/lightspot-search.sock`). The daemon queries its in-memory app list (cached with a 30 s TTL), runs `plocate` (for queries of two or more characters), queries the warm Tantivy content index, evaluates the input as math when applicable, and returns a single JSON document. This avoids spawning a new process on every keystroke, keeping the app list and index warm in memory. The renderer displays the results and, on Enter, asks the main process to launch the app with `gtk-launch`, open the file with `xdg-open`, or copy a calculator result to the clipboard.
 
-On startup the daemon spawns a background indexer thread that performs an initial full build of the Tantivy content index (under `$XDG_CACHE_HOME/spotlight-linux/index/`, or `~/.cache/...` by default) and then uses the `notify` crate to watch for filesystem changes, debouncing events and committing incrementally. The index scope defaults to `$HOME` and can be overridden with the `SPOTLIGHT_INDEX_DIRS` environment variable (colon-separated paths). Binary files (detected via NUL-byte sniffing), files over 2 MiB, hidden files, git-ignored entries, and common build/dependency directories (`node_modules`, `target`, `dist`, `__pycache__`, …) are skipped. A manual full reindex is available with `spotlight-files --index`.
+On startup the daemon spawns a background indexer thread that performs an initial full build of the Tantivy content index (under `$XDG_CACHE_HOME/lightspot-linux/index/`, or `~/.cache/...` by default) and then uses the `notify` crate to watch for filesystem changes, debouncing events and committing incrementally. The index scope defaults to `$HOME` and can be overridden with the `LIGHTSPOT_INDEX_DIRS` environment variable (colon-separated paths). Binary files (detected via NUL-byte sniffing), files over 2 MiB, hidden files, git-ignored entries, and common build/dependency directories (`node_modules`, `target`, `dist`, `__pycache__`, …) are skipped. A manual full reindex is available with `lightspot-files --index`.
 
 ## Verification
 
@@ -165,7 +165,7 @@ cd electron && npm run build
 
 ## Privacy
 
-Spotlight Linux is **fully local and offline**. It makes no network requests, collects no telemetry, and sends no data anywhere. All file indexing, search, and application launching happens on your machine.
+lightspot-linux is **fully local and offline**. It makes no network requests, collects no telemetry, and sends no data anywhere. All file indexing, search, and application launching happens on your machine.
 
 ## License
 

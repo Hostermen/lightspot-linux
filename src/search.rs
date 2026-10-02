@@ -6,7 +6,7 @@
 // This module ties together the three result sources (calculator, app
 // search, file search) into a single ordered `Vec<DisplayItem>`, and
 // provides a hand-rolled JSON serializer (`search_json`) that the
-// Electron frontend consumes via `spotlight-files --search <query>`.
+// Electron frontend consumes via `lightspot-files --search <query>`.
 
 use crate::app_search;
 use crate::calculator;

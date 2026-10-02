@@ -5,7 +5,7 @@
 //
 // Responsibilities:
 //   • Create and manage the transparent, frameless Spotlight window.
-//   • Listen on a Unix socket (/tmp/spotlight-files.sock) for "toggle" /
+//   • Listen on a Unix socket (/tmp/lightspot-files.sock) for "toggle" /
 //     "show" / "hide" commands coming from the Rust hotkey daemon.
 //   • Handle IPC from the renderer (React): run a search via the Rust
 //     binary's `--search` mode, activate results (launch app / open file /
@@ -24,13 +24,13 @@ const fs = require('fs');
 const os = require('os');
 
 // Path of the prebuilt Rust backend, installed by scripts/install-user.sh.
-const BINARY_PATH = path.join(os.homedir(), '.local', 'bin', 'spotlight-files');
+const BINARY_PATH = path.join(os.homedir(), '.local', 'bin', 'lightspot-files');
 // Unix socket the Rust daemon writes "toggle"/"show"/"hide" to.
-const SOCKET_PATH = '/tmp/spotlight-files.sock';
+const SOCKET_PATH = '/tmp/lightspot-files.sock';
 // Unix socket the Rust daemon serves search JSON over. The Electron app
 // connects here per query instead of spawning a `--search` subprocess,
 // which keeps the backend's app list + Tantivy index warm in memory.
-const SEARCH_SOCKET = '/tmp/spotlight-search.sock';
+const SEARCH_SOCKET = '/tmp/lightspot-search.sock';
 // `--dev` flag switches the window source from the built bundle to the Vite dev server.
 const IS_DEV = process.argv.includes('--dev');
 
@@ -62,7 +62,7 @@ let showTime = 0;  // timestamp of last show() — used to ignore spurious blur 
 
 // Build the transparent, frameless window. Hidden until toggled.
 function createWindow() {
-  const winWidth = 680;          // fixed width, matches the CSS .spotlight width
+  const winWidth = 680;          // fixed width, matches the CSS .lightspot width
   const winMaxHeight = 500;      // cap so a long results list can't overflow
 
   win = new BrowserWindow({
@@ -122,7 +122,7 @@ function showWindow() {
   const x = Math.round(primary.bounds.x + (primary.bounds.width - winWidth) / 2);
   const y = Math.round(primary.bounds.y + (primary.bounds.height - winHeight) / 2 - primary.bounds.height * 0.12);
   win.setBounds({ x, y, width: winWidth, height: winHeight });
-  win.webContents.send('spotlight-show'); // tell renderer to clear + focus input
+  win.webContents.send('lightspot-show'); // tell renderer to clear + focus input
   showTime = Date.now();
   win.show();
   win.focus();

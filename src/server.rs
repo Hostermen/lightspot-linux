@@ -16,8 +16,8 @@
 //   client → server: "<query>\n"
 //   server → client: "<json>\n"   (then the server closes the connection)
 //
-// The search socket lives at `/tmp/spotlight-search.sock` (distinct from
-// the toggle socket at `/tmp/spotlight-files.sock`, which the *daemon*
+// The search socket lives at `/tmp/lightspot-search.sock` (distinct from
+// the toggle socket at `/tmp/lightspot-files.sock`, which the *daemon*
 // writes to and the *Electron* app owns). Each connection is handled on
 // its own thread so a slow client can't block others; a read timeout
 // protects against clients that connect without sending.
@@ -30,7 +30,7 @@ use std::time::Duration;
 use crate::search;
 
 /// Path of the search socket owned by the daemon.
-pub const SEARCH_SOCKET: &str = "/tmp/spotlight-search.sock";
+pub const SEARCH_SOCKET: &str = "/tmp/lightspot-search.sock";
 
 /// Spawn the search server on its own thread. Removes any stale socket
 /// file left by a previous crash before binding.
@@ -41,13 +41,13 @@ pub fn spawn_search_server() {
         let listener = match UnixListener::bind(SEARCH_SOCKET) {
             Ok(l) => l,
             Err(e) => {
-                eprintln!("spotlight-files: search socket bind failed: {e}");
+                eprintln!("lightspot-files: search socket bind failed: {e}");
                 return;
             }
         };
         // Restrict to the owner, matching the toggle socket's permissions.
         let _ = std::fs::set_permissions(SEARCH_SOCKET, std::fs::Permissions::from_mode(0o600));
-        eprintln!("spotlight-files: search server listening on {SEARCH_SOCKET}");
+        eprintln!("lightspot-files: search server listening on {SEARCH_SOCKET}");
 
         // Accept loop: one connection per iteration, each on its own thread.
         for stream in listener.incoming() {

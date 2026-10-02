@@ -1,12 +1,12 @@
 {
-  "name": "spotlight-files",
+  "name": "lightspot-files",
   "version": "0.3.0",
-  "description": "Spotlight-style launcher for Linux with app + file search",
+  "description": "keyboard-driven launcher for Linux with app + file search",
   "license": "GPL-3.0-or-later",
   "author": "Hostermen",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Hostermen/spotlight-linux.git"
+    "url": "https://github.com/Hostermen/lightspot-linux.git"
   },
   "main": "electron/main.cjs",
   "scripts": {

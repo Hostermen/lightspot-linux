@@ -1,5 +1,5 @@
 # =============================================================================
-# Pre-commit hook configuration for spotlight-linux
+# Pre-commit hook configuration for lightspot-linux
 # =============================================================================
 # Rust + Electron/React project. Hooks chosen for the actual stack:
 #

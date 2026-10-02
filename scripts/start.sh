@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Hostermen
 
-# start.sh — Launch the Spotlight Files Electron UI + Rust daemon.
+# start.sh — Launch the lightspot-files Electron UI + Rust daemon.
 #
 # This file is a TEMPLATE: the `__ELECTRON_DIR__` placeholder is replaced
 # with the absolute path to the electron/ directory at install time by
@@ -12,17 +12,17 @@
 set -euo pipefail
 
 ELECTRON_DIR="__ELECTRON_DIR__"                       # patched at install
-BINARY="$HOME/.local/bin/spotlight-files"             # the Rust backend
+BINARY="$HOME/.local/bin/lightspot-files"             # the Rust backend
 ELECTRON="$ELECTRON_DIR/node_modules/electron/dist/electron"  # electron binary
-SOCKET="/tmp/spotlight-files.sock"                    # IPC socket between them
+SOCKET="/tmp/lightspot-files.sock"                    # IPC socket between them
 
 # Kill existing instances.
 # Guard every command with `|| true` so `set -e` doesn't abort the script
 # when a unit/process doesn't exist yet (common on first run).
-systemctl --user stop spotlight-electron spotlight-daemon 2>/dev/null || true
+systemctl --user stop lightspot-electron lightspot-daemon 2>/dev/null || true
 # Clear any leftover failed state so systemd-run can reuse the unit names.
-systemctl --user reset-failed spotlight-electron spotlight-daemon 2>/dev/null || true
-pgrep -x spotlight-files | xargs -r kill 2>/dev/null || true
+systemctl --user reset-failed lightspot-electron lightspot-daemon 2>/dev/null || true
+pgrep -x lightspot-files | xargs -r kill 2>/dev/null || true
 pgrep -x electron | xargs -r kill 2>/dev/null || true
 sleep 0.3
 
@@ -45,7 +45,7 @@ else
     SYSTEMD_FLAGS+=("--setenv=GDK_BACKEND=x11")
     SYSTEMD_FLAGS+=("--setenv=CLUTTER_BACKEND=x11")
 fi
-systemd-run --user --unit=spotlight-electron \
+systemd-run --user --unit=lightspot-electron \
     --property=Restart=on-failure \
     --property=RestartSec=2s \
     --working-directory="$ELECTRON_DIR" \
@@ -53,13 +53,13 @@ systemd-run --user --unit=spotlight-electron \
     "$ELECTRON" --no-sandbox "$ELECTRON_DIR"
 
 # Start the Rust daemon (double-Shift hotkey listener).
-systemd-run --user --unit=spotlight-daemon \
+systemd-run --user --unit=lightspot-daemon \
     --property=Restart=on-failure \
     --property=RestartSec=2s \
     "$BINARY"
 
 sleep 1
-echo "Spotlight Files launched."
-echo "Press double-Shift to toggle Spotlight."
-echo "Logs: journalctl --user -u spotlight-electron, journalctl --user -u spotlight-daemon"
-echo "Stop: ~/.local/bin/spotlight-stop"
+echo "lightspot-files launched."
+echo "Press double-Shift to toggle the launcher."
+echo "Logs: journalctl --user -u lightspot-electron, journalctl --user -u lightspot-daemon"
+echo "Stop: ~/.local/bin/lightspot-stop"
