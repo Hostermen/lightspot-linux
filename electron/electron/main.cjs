@@ -109,6 +109,20 @@ function createWindow() {
   win.on('closed', () => {
     win = null;
   });
+
+  // GNOME/XWayland: skipTaskbar:true alone doesn't hide the dock icon —
+  // the window type defaults to NORMAL which GNOME always shows in the
+  // dock. Change it to UTILITY so GNOME excludes the launcher from the
+  // dock/taskbar. Requires xprop (standard on Linux desktops).
+  const handle = win.getNativeWindowHandle();
+  const xid = handle.readUInt32LE(0).toString(16);
+  execFile('xprop', [
+    '-id', `0x${xid}`,
+    '-f', '_NET_WM_WINDOW_TYPE', '32a',
+    '-set', '_NET_WM_WINDOW_TYPE', '_NET_WM_WINDOW_TYPE_UTILITY',
+  ], (e) => {
+    if (e) console.log('lightspot-files: xprop failed (not installed?), dock icon may show');
+  });
 }
 
 // Show the window, recentered, with just the search-bar height initially.
