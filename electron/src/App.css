@@ -22,6 +22,12 @@ html, body, #root {
   max-height: 500px;
   background: rgba(28, 28, 34, 0.96);
   border-radius: 22px;
+  /* Software-GL compositing on the transparent window clips the background
+     layer to a sharp rectangle, ignoring border-radius and leaving a dark
+     rectangular bleed at the rounded corners. clip-path forces the whole
+     element (background layer included) into the rounded shape. */
+  -webkit-clip-path: inset(0 round 22px);
+  clip-path: inset(0 round 22px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   display: flex;
