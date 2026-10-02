@@ -25,6 +25,15 @@ PKG_NAME="spotlight-linux-$VERSION"
 STAGE="$DIST_DIR/$PKG_NAME"
 
 echo "=== Building Rust backend (release) ==="
+# Scrub the build user's home path from the release binary so the public
+# artifact doesn't leak /home/<user>. --remap-path-prefix rewrites the paths
+# embedded in debug info and panic location strings (dependency source paths
+# under $HOME/.cargo/registry/...). Without this, `strings` on the binary
+# exposes the builder's username 200+ times.
+# (Only $HOME is remapped: it contains no spaces, and the project dir — which
+#  has a space and would break RUSTFLAGS word-splitting — does not leak into
+#  the binary anyway.)
+RUSTFLAGS="--remap-path-prefix=$HOME=/home/builder" \
 cargo build --release --manifest-path "$PROJECT_DIR/Cargo.toml"
 
 echo "=== Building Electron frontend ==="

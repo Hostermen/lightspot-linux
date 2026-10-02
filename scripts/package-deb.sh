@@ -29,6 +29,15 @@ DEB_NAME="${PKG_NAME}_${VERSION}_${ARCH}"
 STAGE="$DIST_DIR/$DEB_NAME"
 
 echo "=== Building Rust backend (release) ==="
+# Scrub the build user's home path from the release binary so the public
+# artifact doesn't leak /home/<user>. --remap-path-prefix rewrites the paths
+# embedded in debug info and panic location strings (dependency source paths
+# under $HOME/.cargo/registry/...). Without this, `strings` on the binary
+# exposes the builder's username 200+ times.
+# (Only $HOME is remapped: it contains no spaces, and the project dir — which
+#  has a space and would break RUSTFLAGS word-splitting — does not leak into
+#  the binary anyway.)
+RUSTFLAGS="--remap-path-prefix=$HOME=/home/builder" \
 cargo build --release --manifest-path "$PROJECT_DIR/Cargo.toml"
 
 echo "=== Building Electron frontend ==="
@@ -52,6 +61,15 @@ chmod 0755 "$STAGE/usr/bin/spotlight-files"
 # Bundle the Electron runtime so no npm/node is needed on the target.
 cp -rf "$PROJECT_DIR/electron/node_modules/electron/dist/." \
       "$STAGE/usr/lib/$PKG_NAME/electron/runtime/"
+
+# Strip the FDK AAC codec license paragraph from the bundled Chromium
+# license file so the release artifact carries no third-party codec name
+# that could implicitly identify the maintainer's employer. This removes
+# required third-party license attribution at the maintainer's explicit
+# request. Guarded with '|| true' so a future Electron version whose license
+# file differs in wording doesn't break packaging.
+sed -i '/FDK AAC and OpenSSL/,/compatible with the LGPL\./d' \
+      "$STAGE/usr/lib/$PKG_NAME/electron/runtime/LICENSES.chromium.html" 2>/dev/null || true
 # The Electron runtime needs to be at electron/runtime/, and main.cjs
 # references it relative to its own location. We place the app code at
 # electron/ and the runtime at electron/runtime/.
