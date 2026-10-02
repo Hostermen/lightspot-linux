@@ -55,7 +55,7 @@ Exec=$INSTALL_DIR/lightspot-start
 Icon=system-search
 Terminal=false
 Categories=Utility;System;FileTools;
-Keywords=spotlight;search;launcher;files;apps;
+Keywords=search;launcher;files;apps;
 StartupNotify=true
 EOF
 chmod 0600 "$DESKTOP_DIR/$BIN_NAME.desktop"

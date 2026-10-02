@@ -78,13 +78,13 @@ cd .. && ./scripts/install-user.sh
 
 | Key | Action |
 |-----|--------|
-| Shift, Shift | Summon / dismiss Spotlight |
+| Shift, Shift | Summon / dismiss the launcher |
 | Super+Space | Fallback hotkey |
 | Type | Filter apps, files, or calculate |
 | Arrow Down / Tab | Move down in results |
 | Arrow Up | Move up (back to the search field from the first result) |
 | Enter | Open the selected result (or copy a calculator result) |
-| Esc | Dismiss Spotlight |
+| Esc | Dismiss the launcher |
 
 Start and stop the launcher manually:
 
@@ -148,8 +148,8 @@ cd electron && npm run build
 │   │   └── preload.cjs             # contextBridge API for the renderer
 │   ├── src/
 │   │   ├── main.jsx                # React entry
-│   │   ├── App.jsx                 # Spotlight UI component
-│   │   └── App.css                 # Spotlight styling
+│   │   ├── App.jsx                 # Launcher UI component
+│   │   └── App.css                 # Launcher styling
 │   ├── package.json
 │   ├── eslint.config.js            # Flat ESLint config
 │   ├── vite.config.js

@@ -7,7 +7,7 @@ license = "GPL-3.0-or-later"
 repository = "https://github.com/Hostermen/lightspot-linux"
 readme = "README.md"
 authors = ["Hostermen"]
-keywords = ["launcher", "spotlight", "search", "desktop", "linux"]
+keywords = ["launcher", "search", "desktop", "linux"]
 categories = ["command-line-utilities", "gui"]
 
 [[bin]]

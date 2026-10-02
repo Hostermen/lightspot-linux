@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Hostermen
 
-// App.jsx — The Spotlight UI component (renderer side).
+// App.jsx — The Launcher UI component (renderer side).
 //
 // A single React component that renders the search bar and results list,
 // handles keyboard navigation, and talks to the main process through the
@@ -85,7 +85,7 @@ function App() {
     window.electronAPI.activate(item.action_type, item.action_data);
   }, []);
 
-  // Global key handler for the spotlight (Esc, arrows, Enter, Tab).
+  // Global key handler for the launcher (Esc, arrows, Enter, Tab).
   const handleKey = (e) => {
     if (e.key === 'Escape') {
       window.electronAPI.hide();          // Esc → dismiss

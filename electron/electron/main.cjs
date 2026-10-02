@@ -4,7 +4,7 @@
 // main.cjs — Electron main process.
 //
 // Responsibilities:
-//   • Create and manage the transparent, frameless Spotlight window.
+//   • Create and manage the transparent, frameless launcher window.
 //   • Listen on a Unix socket (/tmp/lightspot-files.sock) for "toggle" /
 //     "show" / "hide" commands coming from the Rust hotkey daemon.
 //   • Handle IPC from the renderer (React): run a search via the Rust
@@ -57,7 +57,7 @@ app.commandLine.appendSwitch('use-angle', 'swiftshader');
 // and --enable-features=UseOzonePlatform are passed as CLI args by start.sh
 // rather than here. app.commandLine.appendSwitch() runs too late for them.
 
-let win = null;   // the single Spotlight window (created lazily)
+let win = null;   // the single launcher window (created lazily)
 let showTime = 0;  // timestamp of last show() — used to ignore spurious blur on Wayland
 
 // Build the transparent, frameless window. Hidden until toggled.
