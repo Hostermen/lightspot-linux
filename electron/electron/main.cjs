@@ -123,6 +123,20 @@ function createWindow() {
   ], (e) => {
     if (e) console.log('lightspot-files: xprop failed (not installed?), dock icon may show');
   });
+
+  // Strip the WM-drawn titlebar (close/minimize/maximize). `frame:false`
+  // only removes Electron's client-side chrome — on XWayland the GNOME/Mutter
+  // compositor still draws server-side decorations on top. The Motif WM
+  // hints tell it to draw no decorations at all, so only our own rounded
+  // card remains. 5 card32 values: flags=2 (DECORATIONS), functions=0,
+  // decorations=0 (none), input_mode=0, status=0.
+  execFile('xprop', [
+    '-id', `0x${xid}`,
+    '-f', '_MOTIF_WM_HINTS', '32c',
+    '-set', '_MOTIF_WM_HINTS', '2, 0, 0, 0, 0',
+  ], (e) => {
+    if (e) console.log('lightspot-files: xprop motif hint failed, titlebar may show');
+  });
 }
 
 // Show the window, recentered, with just the search-bar height initially.
